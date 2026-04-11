@@ -1,139 +1,156 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-// 'authorization' and 'apikey' must be listed here for JWT enforcement to work.
-// The Supabase client sends both; the preflight (OPTIONS) request negotiates them.
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+import { requireRole, jsonResponse, corsHeaders } from '../_shared/supabase.ts'
 
 const ALLOWED_ROLES = ['admin', 'distribution', 'delivery']
 
-// ─── Handler ──────────────────────────────────────────────────────────────────
-Deno.serve(async (req) => {
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
-  // Preflight — must return 200 with CORS headers before any JWT check
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+function estimateMissedRevenue(reviewCount: number, rating: number) {
+  const base = Math.max(15, reviewCount * 3)
+  const multiplier = rating >= 4.7 ? 1.35 : rating >= 4.3 ? 1.2 : 1.05
+  return Math.round(base * 850 * multiplier)
+}
+
+function sectorFromVertical(vertical: string) {
+  return vertical || 'Local Services'
+}
+
+function jobValueRange(vertical: string) {
+  const v = vertical.toLowerCase()
+  if (/(plumb|electr|hvac|trailer|fabricat|engineering)/.test(v)) return 'R5k-R25k'
+  if (/(detail|wash|wrap|groom|salon)/.test(v)) return 'R800-R8k'
+  if (/(renov|landscap|pool|roof|construction|paint)/.test(v)) return 'R10k-R80k'
+  return 'R3k-R20k'
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return jsonResponse({ success: false, error: 'Method not allowed' }, 405)
 
   try {
+    const gate = await requireRole(req, ALLOWED_ROLES)
+    if ('error' in gate) return gate.error
 
-    // 1. Require Authorization header ─────────────────────────────────────────
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing Authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    // 2. Verify JWT via Supabase Auth ──────────────────────────────────────────
-    // We create a client scoped to this user's token so getUser() validates it
-    // against Supabase Auth without needing the service-role key.
-    const supabaseUrl  = Deno.env.get('SUPABASE_URL')!
-    const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!
-
-    const userClient = createClient(supabaseUrl, supabaseAnon, {
-      global: { headers: { Authorization: authHeader } },
-      auth:   { persistSession: false },
-    })
-
-    const { data: { user }, error: authError } = await userClient.auth.getUser()
-
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid or expired token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    // 3. Role guard ────────────────────────────────────────────────────────────
-    const role = user.user_metadata?.role as string | undefined
-
-    if (!role || !ALLOWED_ROLES.includes(role)) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Access denied — role '${role ?? 'none'}' is not permitted to generate MJRs` }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    // 4. Parse request body ────────────────────────────────────────────────────
     const body = await req.json()
     const prospect = body?.prospect
-
     if (!prospect?.business_name) {
-      return new Response(
-        JSON.stringify({ success: false, error: '`prospect` with `business_name` is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return jsonResponse({ success: false, error: '`prospect` with `business_name` is required' }, 400)
     }
 
-    // 5. Generate MJR via Anthropic ───────────────────────────────────────────
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY secret is not set in Supabase')
+    const businessName = String(prospect.business_name)
+    const vertical = String(prospect.vertical || 'Local Services')
+    const suburb = String(prospect.suburb || prospect.city || 'Cape Town')
+    const reviewCount = Number(prospect.google_review_count || 0)
+    const rating = Number(prospect.google_rating || 0)
+    const hasMetaAds = Boolean(prospect.has_meta_ads)
+    const instagramHandle = String(prospect.instagram_handle || '')
+    const instagramFollowers = Number(prospect.instagram_followers || 0)
 
-    const systemPrompt = `You are a senior marketing analyst for Attract Acquisition.
-You generate Missed Jobs Reports (MJRs) — persuasive, data-driven HTML reports that show local service businesses exactly how many leads and how much revenue they are missing each month due to gaps in their digital presence.
-Always output a single complete HTML document with inline CSS. Use a dark professional theme (#07100E background, #00C9A7 accent).
-The report must include: a cover with the missed revenue headline, 5 sections (local demand, competitor landscape, pipeline gap audit, missed revenue calc, action plan), and a Sprint CTA at the end.
-Return a JSON object with two keys: "html" (the full HTML string) and "preview_stats" (an object with: business_name, sector, geography, job_value_range, annual_ltv, estimated_missed, google_reviews, has_instagram, running_ads).`
-
-    const userPrompt = `Generate a complete MJR for this prospect:
-Business: ${prospect.business_name}
-Vertical: ${prospect.vertical || 'Unknown'}
-Suburb / City: ${prospect.suburb || 'Cape Town'}
-Google Reviews: ${prospect.google_review_count ?? 'Unknown'} reviews · ${prospect.google_rating ?? '?'}★
-Instagram: ${prospect.instagram_handle ? `@${prospect.instagram_handle} (${prospect.instagram_followers ?? 0} followers)` : 'None'}
-Meta Ads Running: ${prospect.has_meta_ads ? 'Yes' : 'No'}
-Last Instagram Post: ${prospect.instagram_last_post_date ?? 'Unknown'}
-ICP Tier: ${prospect.icp_tier ?? 'Unscored'} · Score: ${prospect.icp_total_score ?? 0}/25
-Analyst notes / USP: ${prospect.mjr_notes ?? 'None provided'}
-
-Respond ONLY with valid JSON matching the schema described in the system prompt.`
-
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key':         anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type':      'application/json',
-      },
-      body: JSON.stringify({
-        model:      'claude-opus-4-6',
-        max_tokens: 8192,
-        system:     systemPrompt,
-        messages:   [{ role: 'user', content: userPrompt }],
-      }),
-    })
-
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text()
-      throw new Error(`Anthropic API error ${anthropicRes.status}: ${errText}`)
+    const estimatedMissed = estimateMissedRevenue(reviewCount, rating || 4.2)
+    const preview_stats = {
+      business_name: businessName,
+      sector: sectorFromVertical(vertical),
+      geography: suburb,
+      job_value_range: jobValueRange(vertical),
+      annual_ltv: Math.round(estimatedMissed * 0.22),
+      estimated_missed: estimatedMissed,
+      google_reviews: reviewCount,
+      has_instagram: Boolean(instagramHandle),
+      running_ads: hasMetaAds,
     }
 
-    const anthropicData = await anthropicRes.json()
-    const rawText = anthropicData.content?.[0]?.text ?? ''
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(businessName)} | Missed Jobs Report</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: Inter, Arial, sans-serif; background: #07100E; color: #EAFBF7; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 20px 60px; }
+  .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(0,201,167,0.18); border-radius: 18px; padding: 24px; margin-bottom: 18px; }
+  h1,h2,h3 { margin: 0 0 12px; }
+  h1 { font-size: 38px; line-height: 1.05; }
+  h2 { font-size: 22px; color: #00C9A7; }
+  .muted { color: #87A8A1; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .metric { background: rgba(0,201,167,0.08); border: 1px solid rgba(0,201,167,0.2); border-radius: 14px; padding: 14px; }
+  .metric .label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #8DCFC1; }
+  .metric .value { font-size: 20px; font-weight: 700; margin-top: 6px; }
+  ul { line-height: 1.8; }
+  .cta { display: inline-block; background: #00C9A7; color: #07100E; text-decoration: none; padding: 14px 20px; border-radius: 999px; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <p class="muted">Missed Jobs Report</p>
+      <h1>${escapeHtml(businessName)}</h1>
+      <p class="muted">${escapeHtml(vertical)} · ${escapeHtml(suburb)}</p>
+      <div class="grid" style="margin-top:20px;">
+        <div class="metric"><div class="label">Estimated missed revenue</div><div class="value">R ${estimatedMissed.toLocaleString('en-ZA')}</div></div>
+        <div class="metric"><div class="label">Google reviews</div><div class="value">${reviewCount}</div></div>
+        <div class="metric"><div class="label">Rating</div><div class="value">${rating ? rating.toFixed(1) : '—'}</div></div>
+      </div>
+    </div>
 
-    // Strip markdown code fences if Claude wrapped the JSON
-    const jsonText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
-    const result = JSON.parse(jsonText) as { html: string; preview_stats: Record<string, unknown> }
+    <div class="card">
+      <h2>Local demand</h2>
+      <ul>
+        <li>${escapeHtml(suburb)} has demand for ${escapeHtml(vertical.toLowerCase())} jobs right now.</li>
+        <li>Your current search visibility is not capturing the full local market.</li>
+        <li>Faster response and clearer proof would convert more of this demand.</li>
+      </ul>
+    </div>
 
-    if (!result.html) throw new Error('Anthropic returned a response without an html field')
+    <div class="card">
+      <h2>Competitor landscape</h2>
+      <ul>
+        <li>Competitors with stronger reviews and tighter positioning will win attention first.</li>
+        <li>Businesses with active ads and visible proof get the lead before the quote request.</li>
+        <li>${hasMetaAds ? 'Current ads are a start, but the proof system is still incomplete.' : 'No active ads means the demand is still being captured by competitors.'}</li>
+      </ul>
+    </div>
 
-    return new Response(
-      JSON.stringify({ success: true, html: result.html, preview_stats: result.preview_stats }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+    <div class="card">
+      <h2>Pipeline gap audit</h2>
+      <ul>
+        <li>Instagram: ${instagramHandle ? `${escapeHtml(instagramHandle)} (${instagramFollowers.toLocaleString('en-ZA')} followers)` : 'Not visible'}</li>
+        <li>Google trust signal: ${reviewCount} reviews, ${rating ? rating.toFixed(1) : 'unknown'} rating</li>
+        <li>Lead capture: likely leaking without a structured follow-up system.</li>
+      </ul>
+    </div>
 
-  } catch (err: unknown) {
+    <div class="card">
+      <h2>Missed revenue calculation</h2>
+      <p>Based on visible demand and trust signals, the business is likely missing approximately <strong>R ${estimatedMissed.toLocaleString('en-ZA')}</strong> per year in missed jobs.</p>
+      <p class="muted">Estimated job value range: ${escapeHtml(jobValueRange(vertical))} · Estimated annual LTV: R ${preview_stats.annual_ltv.toLocaleString('en-ZA')}</p>
+    </div>
+
+    <div class="card">
+      <h2>Action plan</h2>
+      <ol style="line-height:1.9; padding-left: 20px;">
+        <li>Lock the proof assets, before increasing traffic.</li>
+        <li>Run a 14-day Proof Sprint to generate real market data.</li>
+        <li>Turn the winning proof into a monthly authority system.</li>
+      </ol>
+      <p style="margin-top: 20px;"><a class="cta" href="#">Start Proof Sprint</a></p>
+    </div>
+  </div>
+</body>
+</html>`
+
+    return jsonResponse({ success: true, html, preview_stats })
+  } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[generate-mjr]', message)
-    return new Response(
-      JSON.stringify({ success: false, error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+    return jsonResponse({ success: false, error: message }, 500)
   }
 })

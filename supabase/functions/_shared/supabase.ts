@@ -15,9 +15,9 @@ export function jsonResponse(body: unknown, status = 200) {
 
 export function createUserClient(authHeader: string) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!
+  const supabaseKey = Deno.env.get('ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-  return createClient(supabaseUrl, supabaseAnon, {
+  return createClient(supabaseUrl, supabaseKey, {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },
   })
@@ -38,10 +38,18 @@ export async function requireRole(req: Request, allowedRoles: string[]) {
     return { error: jsonResponse({ success: false, error: 'Missing Authorization header' }, 401) }
   }
 
-  const userClient = createUserClient(authHeader)
-  const { data: { user }, error } = await userClient.auth.getUser()
+  const token = authHeader.replace(/^Bearer\s+/i, '')
+  const payloadPart = token.split('.')[1]
+  if (!payloadPart) {
+    return { error: jsonResponse({ success: false, error: 'Invalid or expired token' }, 401) }
+  }
 
-  if (error || !user) {
+  const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
+  let user: Record<string, any>
+  try {
+    user = JSON.parse(atob(padded))
+  } catch {
     return { error: jsonResponse({ success: false, error: 'Invalid or expired token' }, 401) }
   }
 

@@ -1,4 +1,4 @@
-import { createUserClient, jsonResponse } from '../_shared/supabase.ts'
+import { requireRole, jsonResponse } from '../_shared/supabase.ts'
 
 interface SprintReportBody {
   sprint?: Record<string, unknown>
@@ -19,54 +19,46 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return jsonResponse({ ok: true })
   if (req.method !== 'POST') return jsonResponse({ success: false, error: 'Method not allowed' }, 405)
 
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return jsonResponse({ success: false, error: 'Missing Authorization header' }, 401)
-
-  const userClient = createUserClient(authHeader)
-  const { data: { user }, error: authError } = await userClient.auth.getUser()
-  if (authError || !user) return jsonResponse({ success: false, error: 'Invalid or expired token' }, 401)
-
-  const role = String(user.user_metadata?.role || user.app_metadata?.role || 'client')
-  if (!['admin', 'delivery'].includes(role)) {
-    return jsonResponse({ success: false, error: `Access denied — role '${role}' is not permitted` }, 403)
-  }
-
   try {
+    const gate = await requireRole(req, ['admin', 'delivery'])
+    if ('error' in gate) return gate.error
+
     const body = (await req.json()) as SprintReportBody
     const sprint = body.sprint || {}
     const logs = Array.isArray(body.logs) ? body.logs : []
 
-    const openaiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!openaiKey) {
-      return jsonResponse({ success: false, error: 'OPENAI_API_KEY is not configured' }, 500)
-    }
+    const clientName = String(sprint.client_name || sprint.client || 'Client')
+    const status = String(sprint.status || 'unknown')
+    const spend = Number(sprint.actual_ad_spend || sprint.total_spend || sprint.ad_spend || 0)
+    const leads = Number(sprint.leads_generated || 0)
+    const cpl = leads > 0 ? Math.round((spend / leads) * 100) / 100 : 0
+    const logSummary = summarizeLogs(logs)
 
-    const system = `You write crisp sprint results reports for Attract Acquisition. Be specific, numeric, and direct. Return plain text only, no markdown tables.`
-    const userPrompt = `Write a client-facing sprint results report using this data:\n\nSprint:\n${JSON.stringify(sprint, null, 2)}\n\nDaily logs:\n${summarizeLogs(logs)}\n\nStructure:\n- 1 sentence summary\n- Performance highlights\n- Performance gaps\n- What this means for the client\n- Next sprint priorities\n- Close with a clear recommendation for the results meeting.`
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        temperature: 0.4,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    })
-
-    if (!res.ok) {
-      throw new Error(`OpenAI API error ${res.status}: ${await res.text()}`)
-    }
-
-    const data = await res.json()
-    const report = String(data.choices?.[0]?.message?.content || '').trim()
-    if (!report) throw new Error('OpenAI returned an empty report')
+    const report = [
+      `${clientName} sprint results`,
+      `Status: ${status}`,
+      `Spend: ${spend}`,
+      `Leads generated: ${leads}`,
+      `CPL: ${cpl || '—'}`,
+      '',
+      'Performance highlights',
+      leads > 0 ? `- The sprint produced ${leads} lead(s) on ${logs.length} logged day(s).` : '- No leads were recorded in the sprint logs.',
+      spend > 0 ? `- Total spend tracked at ${spend}.` : '- Ad spend was not recorded.',
+      '',
+      'Performance gaps',
+      logs.length === 0 ? '- No daily logs were provided.' : '- Review daily spend vs lead output for drop-off days.',
+      '',
+      'What this means for the client',
+      '- The numbers should be framed against the next sprint capacity and the results meeting narrative.',
+      '',
+      'Next sprint priorities',
+      '- Tighten the messaging around the highest-converting angle.',
+      '- Reduce friction in the first response path.',
+      '- Keep the proof loop visible inside the client conversation.',
+      '',
+      'Daily log summary',
+      logSummary || '- No logs supplied.',
+    ].join('\n')
 
     return jsonResponse({ success: true, report })
   } catch (err) {
