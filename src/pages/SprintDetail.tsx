@@ -157,7 +157,7 @@ export default function SprintDetail() {
   return (
     <div style={{ maxWidth: 900 }}>
       <button
-        onClick={() => navigate('/sprints')}
+        onClick={() => navigate('/delivery/sprints')}
         style={{
           background: 'none',
           border: 'none',

@@ -15,6 +15,12 @@ import Scraper from './pages/Scraper'
 import Prospects from './pages/Prospects'
 import Outreach from './pages/Outreach'
 import CRM from './pages/crm'
+import Clients from './pages/Clients'
+import Sprints from './pages/Sprints'
+import SprintDetail from './pages/SprintDetail'
+import DeliveryPortal from './pages/DeliveryPortal'
+import ProofBrand from './pages/ProofBrand'
+import AuthorityBrand from './pages/AuthorityBrand'
 import Studio from './pages/Studio'
 import Templates from './pages/Templates'
 import TemplateView from './pages/TemplateView'
@@ -63,6 +69,12 @@ export default function App() {
               <Route path="distribution/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Sops /></RoleWrapper>} />
               <Route path="template-view" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><TemplateView /></RoleWrapper>} />
               <Route path="delivery" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryConsole /></RoleWrapper>} />
+              <Route path="delivery/clients" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Clients /></RoleWrapper>} />
+              <Route path="delivery/sprints" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Sprints /></RoleWrapper>} />
+              <Route path="delivery/sprints/:id" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><SprintDetail /></RoleWrapper>} />
+              <Route path="delivery/portal" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryPortal /></RoleWrapper>} />
+              <Route path="delivery/proof-brand" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><ProofBrand /></RoleWrapper>} />
+              <Route path="delivery/authority-brand" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><AuthorityBrand /></RoleWrapper>} />
               <Route path="portal" element={<RoleWrapper allowedRoles={['admin', 'delivery', 'client']}><ClientPortal /></RoleWrapper>} />
               <Route path="brain" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><BrainConsole /></RoleWrapper>} />
             </Route>

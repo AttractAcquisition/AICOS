@@ -400,7 +400,7 @@ export default function ProofSprint() {
       .limit(1)
       .single()
     if (data?.id) {
-      navigate(`/sprints/${data.id}`)
+      navigate(`/delivery/sprints/${data.id}`)
     } else {
       toast('No active sprint found for this client — create one via Quick Add', 'error')
     }
