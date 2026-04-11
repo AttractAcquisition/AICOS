@@ -1,4 +1,5 @@
 import { useAuth } from '../lib/auth'
+import { DEFAULT_ROUTE_BY_ROLE } from '../lib/route-config'
 import type { ReactNode } from 'react'
 import { ShieldAlert, Home } from 'lucide-react'
 
@@ -93,7 +94,7 @@ export default function RoleWrapper({ allowedRoles, children }: RoleWrapperProps
           </div>
         </div>
 
-        <a href="/#/dashboard" style={{ 
+        <a href={`/#${DEFAULT_ROUTE_BY_ROLE[(role as keyof typeof DEFAULT_ROUTE_BY_ROLE) || 'client'] || '/dashboard'}`} style={{ 
           display: 'flex',
           alignItems: 'center',
           gap: 10,

@@ -48,7 +48,7 @@ export default function Clients() {
       q = q.eq('account_manager', metadata_id)
     }
     
-    // Client Portal: Filter by their own ID
+    // Client Dashboard: Filter by their own ID
     if (role === 'client' && metadata_id) {
       q = q.eq('id', metadata_id)
     }

@@ -2,6 +2,7 @@ import React from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from './lib/toast'
 import { AuthProvider, useAuth } from './lib/auth'
+import { DEFAULT_ROUTE_BY_ROLE } from './lib/route-config'
 import RoleWrapper from './components/RoleWrapper'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -49,6 +50,12 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function LandingRedirect() {
+  const { role } = useAuth()
+  const target = role ? DEFAULT_ROUTE_BY_ROLE[role as keyof typeof DEFAULT_ROUTE_BY_ROLE] : '/dashboard'
+  return <Navigate to={target} replace />
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -56,6 +63,7 @@ export default function App() {
         <HashRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/portal" element={<RequireAuth><RoleWrapper allowedRoles={['client']}><ClientPortal /></RoleWrapper></RequireAuth>} />
             <Route
               path="/"
               element={
@@ -64,8 +72,8 @@ export default function App() {
                 </RequireAuth>
               }
             >
-              <Route index element={<Home />} />
-              <Route path="dashboard" element={<Home />} />
+              <Route index element={<LandingRedirect />} />
+              <Route path="dashboard" element={<RoleWrapper allowedRoles={['admin']}><Home /></RoleWrapper>} />
               <Route path="admin" element={<RoleWrapper allowedRoles={['admin']}><AdminConsole /></RoleWrapper>} />
               <Route path="admin/control" element={<RoleWrapper allowedRoles={['admin']}><AdminControl /></RoleWrapper>} />
               <Route path="admin/finance" element={<RoleWrapper allowedRoles={['admin']}><Finance /></RoleWrapper>} />
@@ -78,7 +86,7 @@ export default function App() {
               <Route path="distribution/studio" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Studio /></RoleWrapper>} />
               <Route path="distribution/templates" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Templates /></RoleWrapper>} />
               <Route path="distribution/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Sops /></RoleWrapper>} />
-              <Route path="template-view" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><TemplateView /></RoleWrapper>} />
+              <Route path="template-view" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><TemplateView /></RoleWrapper>} />
               <Route path="delivery" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryConsole /></RoleWrapper>} />
               <Route path="delivery/clients" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Clients /></RoleWrapper>} />
               <Route path="delivery/sprints" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Sprints /></RoleWrapper>} />
@@ -86,15 +94,14 @@ export default function App() {
               <Route path="delivery/portal" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryPortal /></RoleWrapper>} />
               <Route path="delivery/proof-brand" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><ProofBrand /></RoleWrapper>} />
               <Route path="delivery/authority-brand" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><AuthorityBrand /></RoleWrapper>} />
-              <Route path="portal" element={<RoleWrapper allowedRoles={['admin', 'delivery', 'client']}><ClientPortal /></RoleWrapper>} />
-              <Route path="brain" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><BrainConsole /></RoleWrapper>} />
-              <Route path="brain/chat" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Brain /></RoleWrapper>} />
-              <Route path="brain/prompts" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><ChatPage /></RoleWrapper>} />
-              <Route path="brain/repository" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Documents /></RoleWrapper>} />
-              <Route path="brain/content" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><ContentPage /></RoleWrapper>} />
-              <Route path="brain/templates" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Templates /></RoleWrapper>} />
-              <Route path="brain/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Sops /></RoleWrapper>} />
-              <Route path="content" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><ContentPage /></RoleWrapper>} />
+              <Route path="brain" element={<RoleWrapper allowedRoles={['admin']}><BrainConsole /></RoleWrapper>} />
+              <Route path="brain/chat" element={<RoleWrapper allowedRoles={['admin']}><Brain /></RoleWrapper>} />
+              <Route path="brain/prompts" element={<RoleWrapper allowedRoles={['admin']}><ChatPage /></RoleWrapper>} />
+              <Route path="brain/repository" element={<RoleWrapper allowedRoles={['admin']}><Documents /></RoleWrapper>} />
+              <Route path="brain/content" element={<RoleWrapper allowedRoles={['admin']}><ContentPage /></RoleWrapper>} />
+              <Route path="brain/templates" element={<RoleWrapper allowedRoles={['admin']}><Templates /></RoleWrapper>} />
+              <Route path="brain/sops" element={<RoleWrapper allowedRoles={['admin']}><Sops /></RoleWrapper>} />
+              <Route path="content" element={<RoleWrapper allowedRoles={['admin']}><ContentPage /></RoleWrapper>} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

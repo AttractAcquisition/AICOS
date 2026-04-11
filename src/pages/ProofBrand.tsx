@@ -43,10 +43,10 @@ const PROOF_BRAND_STEPS: StepDef[] = [
     solves: 'Starting without clarity → wasted build time and misdirected spend',
     description:
       'A dedicated onboarding call collects every asset, access credential, and strategic input needed before a single piece of infrastructure is built. Sector, target client profile, average job value, conversion objective, and brand voice are locked in. Nothing is built on assumptions — everything built after this point is specific to the business, the city, and the market.',
-    tools: ['AA Client Portal', 'Onboarding Brief'],
+    tools: ['AA Client Dashboard', 'Onboarding Brief'],
     items: [
       'Onboarding call completed',
-      'AA Client Portal account created and client invited',
+      'AA Client Dashboard account created and client invited',
       'Onboarding Brief completed in full',
       'Sector and target client profile documented',
       'Average job value and conversion objective confirmed',
@@ -61,7 +61,7 @@ const PROOF_BRAND_STEPS: StepDef[] = [
     solves: 'Traffic arriving with nowhere to go and no reason to act',
     description:
       'Conversion infrastructure is optimised end-to-end for the specific conversion objective — WhatsApp enquiries, website form submissions, or direct DM bookings. A conversion landing page is built using the brand, proof, and psychology-driven copy that speaks directly to the specific fears and desires of the local target client. Every element is A/B tested from Week 1.',
-    tools: ['AA Client Portal', 'Lovable Landing Page', 'WhatsApp Business'],
+    tools: ['AA Client Dashboard', 'Lovable Landing Page', 'WhatsApp Business'],
     items: [
       'Conversion objective confirmed (WhatsApp / Form / DM)',
       'Landing page copy written and approved by client',
@@ -79,7 +79,7 @@ const PROOF_BRAND_STEPS: StepDef[] = [
     solves: "Cold audiences who don't know you exist and don't trust you yet",
     description:
       "A master Attraction document is built that defines the top-of-funnel content strategy — credibility-driven proof content that builds awareness and trust with cold local audiences. Every attraction post and ad is designed to answer one question in a cold prospect's mind: \"Does this business do great work?\" Job documentation, process footage, results, and proof of quality — systematised and distributed at volume.",
-    tools: ['AA Studio', 'Meta Ads Manager', 'AA Client Portal'],
+    tools: ['AA Studio', 'Meta Ads Manager', 'AA Client Dashboard'],
     items: [
       'Attraction Positioning Document created and filed',
       'Top-of-funnel content strategy defined',
@@ -98,7 +98,7 @@ const PROOF_BRAND_STEPS: StepDef[] = [
     solves: "Warm audiences who've seen you but haven't committed",
     description:
       "A master Nurture document structures the middle-of-funnel content — credibility-driven posts and ads that retarget warm audiences who've already engaged with the profile or ads. People who see the work once and leave are expensive to re-acquire cold. The nurture campaign keeps the brand visible and trust compounding with people who are already interested — so when they're ready to book, this is the only name they think of.",
-    tools: ['AA Studio', 'Meta Retargeting', 'AA Client Portal'],
+    tools: ['AA Studio', 'Meta Retargeting', 'AA Client Dashboard'],
     items: [
       'Nurture Positioning Document created and filed',
       'Middle-of-funnel content strategy defined',
@@ -117,7 +117,7 @@ const PROOF_BRAND_STEPS: StepDef[] = [
     solves: "Warm audiences who want to book but haven't been asked in the right way",
     description:
       "A master Conversion document drives the bottom-of-funnel — psychologically sequenced content and ads built to move a warm prospect from consideration to commitment. Every conversion campaign is structured around the specific decision-making psychology of the target client — their primary objection, their deepest hesitation, and the exact proof point that converts them. This is where revenue is made.",
-    tools: ['AA Studio', 'Meta Conversion Ads', 'AA Client Portal'],
+    tools: ['AA Studio', 'Meta Conversion Ads', 'AA Client Dashboard'],
     items: [
       'Conversion Positioning Document created and filed',
       'Primary client objection and hesitation documented',
@@ -136,7 +136,7 @@ const PROOF_BRAND_STEPS: StepDef[] = [
     solves: 'Enquiries that die in the DMs and never become booked appointments',
     description:
       'A fully documented DM qualifier and booking sequence is installed and coached from Week 1. Every inbound message is handled through a proven framework: qualifier questions that filter serious leads from window-shoppers → appointment booking → confirmation message → show-up follow-up the day before. The account manager manages DMs alongside the client for the first 48 hours of each new campaign cycle — coaching in real time until the flow is second nature.',
-    tools: ['WhatsApp Business', 'DM Script Framework', 'AA Client Portal'],
+    tools: ['WhatsApp Business', 'DM Script Framework', 'AA Client Dashboard'],
     items: [
       'DM qualifier sequence documented and shared with client',
       'Appointment booking message scripted',
@@ -168,14 +168,14 @@ const PROOF_BRAND_STEPS: StepDef[] = [
   },
   {
     id: 8,
-    title: 'AA Client Portal — Live Pipeline Dashboard',
+    title: 'AA Client Dashboard — Live Pipeline Dashboard',
     value: 'R3,500',
     solves: 'Having no visibility into what the marketing is actually producing',
     description:
       'The live pipeline is set up, populated, and updated by the account manager every 24 hours. From the moment the engine is live: Profile Visits → DMs Started → Qualified Leads → Appointments Booked → Cash Collected. The client will know, in real time, exactly which campaign is producing revenue. No guessing. No waiting for a monthly report. The data is live. The answer is always available.',
     tools: ['AA Portal', 'Daily AM Updates', 'Meta Ads Integration'],
     items: [
-      'AA Client Portal pipeline configured for client',
+      'AA Client Dashboard pipeline configured for client',
       'All 5 pipeline stages set up (Visits → DMs → Leads → Booked → Cash)',
       'Meta Ads data integration connected and verified',
       'Daily AM update schedule confirmed',
@@ -208,7 +208,7 @@ const PROOF_BRAND_STEPS: StepDef[] = [
     solves: 'Launching before the client understands the system and can maximise it',
     description:
       "Before a single campaign goes live, a dedicated orientation call confirms everything is in place: positioning documents approved, conversion infrastructure live, ad creatives reviewed, and DM flow understood. The client gives explicit permission to launch — and the engine goes live only when they're fully confident in the system. No surprises. No confusion. A clear launch moment with full visibility from Day 1.",
-    tools: ['AA Client Portal', 'Launch Checklist'],
+    tools: ['AA Client Dashboard', 'Launch Checklist'],
     items: [
       'All 3 positioning documents (Attract / Nurture / Convert) approved by client',
       'Conversion landing page confirmed live',

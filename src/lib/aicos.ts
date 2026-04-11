@@ -7,7 +7,7 @@ export const AICOS = {
     admin: '/admin',
     distribution: '/distribution',
     delivery: '/delivery',
-    portal: '/portal',
+    clientDashboard: '/portal',
     brain: '/brain',
   },
   tables: {
@@ -69,7 +69,7 @@ export const CONSOLES = [
     key: 'delivery',
     title: 'Delivery Console',
     route: AICOS.routes.delivery,
-    description: 'Clients, sprints, delivery metrics, and portal operations.',
+    description: 'Clients, sprints, delivery metrics, and client dashboard operations.',
     tables: [AICOS.tables.clients, AICOS.tables.sprints, AICOS.tables.deliveryMetrics, AICOS.tables.deliveryProgress, AICOS.tables.portalTasks, AICOS.tables.portalMessages, AICOS.tables.portalDocuments],
   },
   {
@@ -78,13 +78,6 @@ export const CONSOLES = [
     route: AICOS.routes.admin,
     description: 'System status, finance, approvals, exceptions, and governance.',
     tables: [AICOS.views.opsManagerStatus, AICOS.tables.financialSnapshots, AICOS.tables.ledgerEntries, AICOS.tables.approvalLogs, AICOS.tables.exceptionLogs, AICOS.tables.integrationEvents, AICOS.tables.profiles],
-  },
-  {
-    key: 'portal',
-    title: 'Client Portal',
-    route: AICOS.routes.portal,
-    description: 'Client-facing delivery, tasks, messages, and documents.',
-    tables: [AICOS.tables.clients, AICOS.tables.sprints, AICOS.tables.portalTasks, AICOS.tables.portalMessages, AICOS.tables.portalDocuments, AICOS.tables.managerReviews],
   },
   {
     key: 'brain',

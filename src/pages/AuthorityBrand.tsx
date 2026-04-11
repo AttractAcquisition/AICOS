@@ -43,7 +43,7 @@ const AUTHORITY_BRAND_STEPS: StepDef[] = [
     solves: 'Installing a human element without a clear voice, character, or positioning direction',
     description:
       'Before a Brand Avatar is sourced or a UGC creator is briefed, a dedicated Authority Onboarding session maps the brand\'s on-camera direction. What voice does the brand need? What sector knowledge should be communicated? What personality should the audience associate with this business? The answers define the brief that makes every piece of human-led content coherent — not just a collection of videos with a face in them. This session produces the Brand Direction Document that governs all authority content going forward.',
-    tools: ['Brand Direction Brief', 'AA Client Portal', 'AA Studio'],
+    tools: ['Brand Direction Brief', 'AA Client Dashboard', 'AA Studio'],
     items: [
       'Authority onboarding call completed',
       'Brand voice and on-camera direction defined',
@@ -193,7 +193,7 @@ const AUTHORITY_BRAND_STEPS: StepDef[] = [
     solves: 'Launching upgraded campaigns without aligning on the expanded strategy and Avatar integration',
     description:
       'Before any authority content goes live, a dedicated orientation call confirms the Brand Avatar or UGC framework is operational, all positioning documents have been upgraded, the five-campaign structure is approved, and the first 14-day authority cycle is ready to launch. The client sees the full upgraded plan before a single piece of content is published. Nothing launches without sign-off. The go-live is a clear before and after for the brand\'s positioning in the market.',
-    tools: ['AA Client Portal', 'Launch Checklist', 'Avatar Go-Live Brief'],
+    tools: ['AA Client Dashboard', 'Launch Checklist', 'Avatar Go-Live Brief'],
     items: [
       'Brand Avatar or UGC framework confirmed operational',
       'All 3 upgraded positioning documents (Attract / Nurture / Convert) approved',

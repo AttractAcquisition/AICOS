@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom' // <-- 1. Import useNavigate
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { DEFAULT_ROUTE_BY_ROLE } from '../lib/route-config'
 
 export default function Login() {
   const navigate = useNavigate() // <-- 2. Initialize navigation
@@ -15,14 +16,14 @@ export default function Login() {
     setLoading(true)
     setError('')
     
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
     
     if (err) { 
       setError(err.message)
       setLoading(false) 
     } else {
-      // <-- 3. Force the redirect explicitly on success!
-      navigate('/', { replace: true })
+      const role = (data.user?.user_metadata?.role as keyof typeof DEFAULT_ROUTE_BY_ROLE) || 'client'
+      navigate(DEFAULT_ROUTE_BY_ROLE[role] || '/', { replace: true })
     }
   }
 

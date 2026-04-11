@@ -195,7 +195,7 @@ export default function ClientView() {
     <div style={{ maxWidth: 860, margin: '0 auto', paddingBottom: 60 }}>
       <header style={{ marginBottom: 28 }}>
         <h1 style={{ fontFamily: 'Playfair Display', fontSize: 28, fontWeight: 700, marginBottom: 8, color: 'var(--white)' }}>
-          Client Portal
+          Client Dashboard
         </h1>
         <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--grey)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           Tasks · Documents · Messages

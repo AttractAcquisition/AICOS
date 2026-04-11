@@ -35,9 +35,9 @@ export default function ClientPortal() {
 
   return (
     <ConsoleShell
-      badge="AIOS / Client Portal"
-      title="Client Portal"
-      subtitle="Client-facing delivery, proof sprint progress, messages, and shared assets."
+      badge="AIOS / Client Dashboard"
+      title="Client Dashboard"
+      subtitle="Client-facing delivery progress, messages, and shared assets."
       stats={[
         { label: 'Client', value: client?.business_name || 'Pending', icon: Briefcase },
         { label: 'Sprint', value: sprint?.status || '—', icon: FolderOpen },
@@ -45,7 +45,7 @@ export default function ClientPortal() {
         { label: 'Messages', value: messages.length, icon: MessageSquare },
       ]}
     >
-      <Panel title="Portal Overview">
+      <Panel title="Dashboard Overview">
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <MiniMetric label="Client" value={client?.business_name || 'Pending'} icon={Briefcase} />
           <MiniMetric label="Current Sprint" value={sprint ? `#${sprint.sprint_number || 1} · ${sprint.status || 'setup'}` : 'No active sprint'} icon={CalendarDays} />
@@ -92,7 +92,7 @@ export default function ClientPortal() {
           {tasks.map(t => (
             <Row key={t.id} left={t.title} right={`${t.status || 'pending'} · ${t.due_date || 'no due date'}`} />
           ))}
-          {tasks.length === 0 && <Empty label="No portal tasks yet" />}
+          {tasks.length === 0 && <Empty label="No tasks yet" />}
         </div>
       </Panel>
 
@@ -101,7 +101,7 @@ export default function ClientPortal() {
           {messages.map(m => (
             <Row key={m.id} left={m.message_text} right={`${m.sender_kind || 'internal'} · ${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}`} />
           ))}
-          {messages.length === 0 && <Empty label="No portal messages yet" />}
+          {messages.length === 0 && <Empty label="No messages yet" />}
         </div>
       </Panel>
     </ConsoleShell>

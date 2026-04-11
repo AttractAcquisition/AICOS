@@ -1,6 +1,6 @@
-import { Shield, GitBranch, Inbox, Brain, FolderOpen } from 'lucide-react'
+import { Shield, GitBranch, Inbox, Brain } from 'lucide-react'
 
-export type RouteKey = 'admin' | 'distribution' | 'delivery' | 'portal' | 'brain'
+export type RouteKey = 'admin' | 'distribution' | 'delivery' | 'brain'
 
 export interface RouteMeta {
   path: string
@@ -32,24 +32,17 @@ export const ROUTE_CONFIG: Record<RouteKey, RouteMeta> = {
     icon: Inbox,
     roles: ['admin', 'delivery'],
   },
-  portal: {
-    path: '/portal',
-    label: 'Client Portal',
-    section: 'Client',
-    icon: FolderOpen,
-    roles: ['admin', 'delivery', 'client'],
-  },
   brain: {
     path: '/brain',
     label: 'Brain / Knowledge Console',
     section: 'Knowledge',
     icon: Brain,
-    roles: ['admin', 'distribution', 'delivery'],
+    roles: ['admin'],
   },
 }
 
 export const DEFAULT_ROUTE_BY_ROLE: Record<'admin' | 'distribution' | 'delivery' | 'client', string> = {
-  admin: '/admin',
+  admin: '/dashboard',
   distribution: '/distribution',
   delivery: '/delivery',
   client: '/portal',

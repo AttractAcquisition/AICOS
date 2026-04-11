@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import { Briefcase, Activity, MessageSquare, FileText, CheckCircle2, Users, ArrowRight, ShieldCheck, Layers3 } from 'lucide-react'
+import { Briefcase, Activity, MessageSquare, FileText, CheckCircle2, Users, ArrowRight, Layers3 } from 'lucide-react'
 
 const MODULES = [
   {
@@ -24,12 +24,6 @@ const MODULES = [
     path: '/delivery/portal',
     description: 'Assign portal tasks, upload files, and keep the delivery thread active.',
     icon: MessageSquare,
-  },
-  {
-    title: 'Client Portal',
-    path: '/portal',
-    description: 'Open the client-facing portal surface.',
-    icon: ShieldCheck,
   },
   {
     title: 'Proof Brand',

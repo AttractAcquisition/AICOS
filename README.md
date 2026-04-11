@@ -6,8 +6,10 @@ AICOS is the front end for the Attract Acquisition operating system.
 - Distribution Console
 - Delivery Console
 - Admin Console
-- Client Portal
 - Brain / Knowledge Console
+
+## Client Dashboard
+- Separate client-only dashboard at `/portal`
 
 ## Backend mapping
 This front end is mapped to the AICOS Supabase schema.
