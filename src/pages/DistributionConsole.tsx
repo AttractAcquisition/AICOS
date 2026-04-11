@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
-import { getVisibleSopCategories, getVisibleTemplateCategories } from '../lib/library'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import ConsoleLibraryPanel from '../components/ConsoleLibraryPanel'
 import { Users, Target, CheckSquare, FileText, Search, ArrowRight, Bot, Library, ClipboardList, MessageSquare } from 'lucide-react'
 
 const MODULES = [
@@ -51,14 +49,23 @@ const MODULES = [
     description: 'Keep the acquisition playbook, rules, and process docs in order.',
     icon: CheckSquare,
   },
+  {
+    title: 'Templates',
+    path: '/templates',
+    description: 'Open the role-aware template library.',
+    icon: Library,
+  },
+  {
+    title: 'SOP Library',
+    path: '/sops',
+    description: 'Open the role-aware SOP library.',
+    icon: CheckSquare,
+  },
 ]
 
 export default function DistributionConsole() {
   const { metadata_id } = useAuth()
-  const scope = 'distribution' as const
   const [prospects, setProspects] = useState<any[]>([])
-  const [templates, setTemplates] = useState<any[]>([])
-  const [sops, setSops] = useState<any[]>([])
   const [stats, setStats] = useState({ total: 0, active: 0, won: 0, progress: 0 })
   const [metrics, setMetrics] = useState<any[]>([])
   const db = supabase as any
@@ -66,23 +73,10 @@ export default function DistributionConsole() {
   useEffect(() => { load() }, [metadata_id])
 
   async function load() {
-    const templateCategories = getVisibleTemplateCategories(scope)
-    const sopCategories = getVisibleSopCategories(scope)
-
-    const templateQuery = templateCategories.length > 0
-      ? db.from(AICOS.tables.templates).select('id, title, category, updated_at').in('category', templateCategories).order('updated_at', { ascending: false })
-      : Promise.resolve({ data: [] as any[] })
-
-    const sopQuery = sopCategories.length > 0
-      ? db.from(AICOS.tables.sops).select('id, title, category, status, sop_number, updated_at').in('category', sopCategories).eq('status', 'active').order('sop_number', { ascending: true })
-      : Promise.resolve({ data: [] as any[] })
-
-    const [{ data: prospectRows }, { data: metricRows }, { data: progressRows }, { data: templateRows }, { data: sopRows }] = await Promise.all([
+    const [{ data: prospectRows }, { data: metricRows }, { data: progressRows }] = await Promise.all([
       db.from(AICOS.tables.prospects).select('id, business_name, status, pipeline_stage, icp_tier, vertical, updated_at').order('updated_at', { ascending: false }).limit(8),
       db.from(AICOS.tables.distributionMetrics).select('*').order('date_key', { ascending: false }).limit(7),
       db.from(AICOS.tables.distributionProgress).select('*').limit(40),
-      templateQuery,
-      sopQuery,
     ])
 
     const allProspects = prospectRows || []
@@ -92,8 +86,6 @@ export default function DistributionConsole() {
     const totalProgress = progressRows?.length || 0
 
     setProspects(allProspects)
-    setTemplates(templateRows || [])
-    setSops(sopRows || [])
     setStats({ total: allProspects.length, active, won, progress: totalProgress ? Math.round((completed / totalProgress) * 100) : 0 })
     setMetrics(metricRows || [])
   }
@@ -175,7 +167,6 @@ export default function DistributionConsole() {
         </div>
       </Panel>
 
-      <ConsoleLibraryPanel templates={templates} sops={sops} scopeLabel="Distribution Scope" />
     </ConsoleShell>
   )
 }

@@ -1,11 +1,25 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
-import { getVisibleSopCategories, getVisibleTemplateCategories } from '../lib/library'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import ConsoleLibraryPanel from '../components/ConsoleLibraryPanel'
-import { FolderOpen, MessageSquare, CheckSquare, FileText, Briefcase, CalendarDays } from 'lucide-react'
+import { FolderOpen, MessageSquare, CheckSquare, FileText, Briefcase, CalendarDays, ArrowRight } from 'lucide-react'
+
+const MODULES = [
+  {
+    title: 'Templates',
+    path: '/templates',
+    description: 'Open the client-facing template library.',
+    icon: FileText,
+  },
+  {
+    title: 'SOPs',
+    path: '/sops',
+    description: 'Open the client-facing SOP library.',
+    icon: CheckSquare,
+  },
+]
 
 export default function ClientPortal() {
   const { metadata_id, role } = useAuth()
@@ -14,24 +28,12 @@ export default function ClientPortal() {
   const [tasks, setTasks] = useState<any[]>([])
   const [messages, setMessages] = useState<any[]>([])
   const [documents, setDocuments] = useState<any[]>([])
-  const [templates, setTemplates] = useState<any[]>([])
-  const [sops, setSops] = useState<any[]>([])
   const db = supabase as any
-  const scope = 'client' as const
 
   useEffect(() => { if (metadata_id) load() }, [metadata_id, role])
 
   async function load() {
     if (!metadata_id) return
-    const templateCategories = getVisibleTemplateCategories(scope)
-    const sopCategories = getVisibleSopCategories(scope)
-    const templateQuery = templateCategories.length > 0
-      ? db.from(AICOS.tables.templates).select('id, title, category, updated_at').in('category', templateCategories).order('updated_at', { ascending: false })
-      : Promise.resolve({ data: [] as any[] })
-    const sopQuery = sopCategories.length > 0
-      ? db.from(AICOS.tables.sops).select('id, title, category, status, sop_number, updated_at').in('category', sopCategories).eq('status', 'active').order('sop_number', { ascending: true })
-      : Promise.resolve({ data: [] as any[] })
-
     const [clientRes, sprintRes, taskRes, messageRes, documentRes] = await Promise.all([
       db.from(AICOS.tables.clients).select('*').eq('id', metadata_id).maybeSingle(),
       db.from(AICOS.tables.sprints).select('*').eq('client_id', metadata_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -40,15 +42,11 @@ export default function ClientPortal() {
       db.from(AICOS.tables.portalDocuments).select('*').eq('client_id', metadata_id).order('created_at', { ascending: false }).limit(10),
     ])
 
-    const [templateRes, sopRes] = await Promise.all([templateQuery, sopQuery])
-
     setClient(clientRes.data || null)
     setSprint(sprintRes.data || null)
     setTasks(taskRes.data || [])
     setMessages(messageRes.data || [])
     setDocuments(documentRes.data || [])
-    setTemplates(templateRes.data || [])
-    setSops(sopRes.data || [])
   }
 
   return (
@@ -70,6 +68,43 @@ export default function ClientPortal() {
           <MiniMetric label="Tasks" value={tasks.length} icon={CheckSquare} />
           <MiniMetric label="Messages" value={messages.length} icon={MessageSquare} />
           <MiniMetric label="Documents" value={documents.length} icon={FileText} />
+        </div>
+      </Panel>
+
+      <Panel title="Functionality Launchpad">
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          {MODULES.map(module => {
+            const Icon = module.icon
+            return (
+              <Link
+                key={module.path}
+                to={module.path}
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  border: '1px solid var(--border2)',
+                  borderRadius: 12,
+                  background: 'var(--bg2)',
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  minHeight: 150,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{module.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--grey)', marginTop: 4, lineHeight: 1.5 }}>{module.description}</div>
+                  </div>
+                  <Icon size={16} color="var(--teal)" />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', fontFamily: 'DM Mono', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 'auto' }}>
+                  Open module <ArrowRight size={12} />
+                </div>
+              </Link>
+            )
+          })}
         </div>
       </Panel>
 
@@ -104,8 +139,6 @@ export default function ClientPortal() {
           {documents.length === 0 && <Empty label="No shared documents yet" />}
         </div>
       </Panel>
-
-      <ConsoleLibraryPanel templates={templates} sops={sops} scopeLabel="Client Scope" />
 
       <Panel title="Portal Tasks">
         <div style={{ display: 'grid', gap: 10 }}>

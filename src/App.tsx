@@ -78,6 +78,8 @@ export default function App() {
               <Route path="admin/control" element={<RoleWrapper allowedRoles={['admin']}><AdminControl /></RoleWrapper>} />
               <Route path="admin/finance" element={<RoleWrapper allowedRoles={['admin']}><Finance /></RoleWrapper>} />
               <Route path="admin/income" element={<RoleWrapper allowedRoles={['admin']}><IncomeTracking /></RoleWrapper>} />
+              <Route path="templates" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><Templates /></RoleWrapper>} />
+              <Route path="sops" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><Sops /></RoleWrapper>} />
               <Route path="distribution" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><DistributionConsole /></RoleWrapper>} />
               <Route path="distribution/scraper" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Scraper /></RoleWrapper>} />
               <Route path="distribution/prospects" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Prospects /></RoleWrapper>} />
