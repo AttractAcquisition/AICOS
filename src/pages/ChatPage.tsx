@@ -79,7 +79,8 @@ const ChatPage = () => {
     setLoading(true)
 
     try {
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
+      if (!BACKEND_URL) throw new Error('VITE_BACKEND_URL is not configured.')
       const response = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

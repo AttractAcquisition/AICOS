@@ -1,8 +1,48 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import { Brain, FileText, Search, Layers3, Paperclip } from 'lucide-react'
+import { Brain, FileText, Search, Layers3, Paperclip, BookOpen, FolderOpen, MessageSquare, ArrowRight } from 'lucide-react'
+
+const MODULES = [
+  {
+    title: 'Brain Chat',
+    path: '/brain/chat',
+    description: 'Ask the knowledge relay to draft, audit, or explain systems.',
+    icon: MessageSquare,
+  },
+  {
+    title: 'Prompt Assistant',
+    path: '/brain/prompts',
+    description: 'Use quick prompts for SOPs, funnels, objections, and workflows.',
+    icon: Layers3,
+  },
+  {
+    title: 'Knowledge Repository',
+    path: '/brain/repository',
+    description: 'Browse the local asset tree and raw reference files.',
+    icon: FolderOpen,
+  },
+  {
+    title: 'Template Library',
+    path: '/brain/templates',
+    description: 'Manage template content, linked files, and rendered previews.',
+    icon: FileText,
+  },
+  {
+    title: 'SOP Library',
+    path: '/brain/sops',
+    description: 'Keep the operational playbook clean and current.',
+    icon: BookOpen,
+  },
+  {
+    title: 'Template Viewer',
+    path: '/template-view',
+    description: 'Preview raw HTML templates in a separate viewer.',
+    icon: Paperclip,
+  },
+]
 
 export default function BrainConsole() {
   const [docs, setDocs] = useState<any[]>([])
@@ -26,7 +66,7 @@ export default function BrainConsole() {
 
   return (
     <ConsoleShell
-      badge="AICOS / Brain"
+      badge="AIOS / Brain"
       title="Brain / Knowledge Console"
       subtitle="Canonical documents, vector chunks, retrieval logs, SOPs, templates, and file assets."
       stats={[
@@ -36,6 +76,43 @@ export default function BrainConsole() {
         { label: 'Assets', value: AICOS.tables.assets, icon: Paperclip },
       ]}
     >
+      <Panel title="Knowledge Launchpad">
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          {MODULES.map(module => {
+            const Icon = module.icon
+            return (
+              <Link
+                key={module.path}
+                to={module.path}
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  border: '1px solid var(--border2)',
+                  borderRadius: 12,
+                  background: 'var(--bg2)',
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  minHeight: 150,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{module.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--grey)', marginTop: 4, lineHeight: 1.5 }}>{module.description}</div>
+                  </div>
+                  <Icon size={16} color="var(--teal)" />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', fontFamily: 'DM Mono', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 'auto' }}>
+                  Open module <ArrowRight size={12} />
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </Panel>
+
       <Panel title="Mapped Backend Objects">
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <MiniMetric label="Table" value={AICOS.tables.knowledgeDocuments} />

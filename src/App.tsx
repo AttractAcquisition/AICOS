@@ -11,6 +11,9 @@ import DistributionConsole from './pages/DistributionConsole'
 import DeliveryConsole from './pages/DeliveryConsole'
 import ClientPortal from './pages/ClientPortal'
 import BrainConsole from './pages/BrainConsole'
+import Brain from './pages/Brain'
+import ChatPage from './pages/ChatPage'
+import Documents from './pages/Documents'
 import Scraper from './pages/Scraper'
 import Prospects from './pages/Prospects'
 import Outreach from './pages/Outreach'
@@ -83,6 +86,11 @@ export default function App() {
               <Route path="delivery/authority-brand" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><AuthorityBrand /></RoleWrapper>} />
               <Route path="portal" element={<RoleWrapper allowedRoles={['admin', 'delivery', 'client']}><ClientPortal /></RoleWrapper>} />
               <Route path="brain" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><BrainConsole /></RoleWrapper>} />
+              <Route path="brain/chat" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Brain /></RoleWrapper>} />
+              <Route path="brain/prompts" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><ChatPage /></RoleWrapper>} />
+              <Route path="brain/repository" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Documents /></RoleWrapper>} />
+              <Route path="brain/templates" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Templates /></RoleWrapper>} />
+              <Route path="brain/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Sops /></RoleWrapper>} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
