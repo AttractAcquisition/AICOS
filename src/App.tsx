@@ -5,12 +5,20 @@ import { AuthProvider, useAuth } from './lib/auth'
 import RoleWrapper from './components/RoleWrapper'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import Home from './pages/Home'
 import AdminConsole from './pages/AdminConsole'
 import DistributionConsole from './pages/DistributionConsole'
 import DeliveryConsole from './pages/DeliveryConsole'
 import ClientPortal from './pages/ClientPortal'
 import BrainConsole from './pages/BrainConsole'
-import { DEFAULT_ROUTE_BY_ROLE } from './lib/route-config'
+import Scraper from './pages/Scraper'
+import Prospects from './pages/Prospects'
+import Outreach from './pages/Outreach'
+import CRM from './pages/crm'
+import Studio from './pages/Studio'
+import Templates from './pages/Templates'
+import TemplateView from './pages/TemplateView'
+import Sops from './pages/Sops'
 
 function LoadingScreen() {
   return (
@@ -28,11 +36,6 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function RootRedirect() {
-  const { role } = useAuth()
-  return <Navigate to={DEFAULT_ROUTE_BY_ROLE[(role || 'client') as keyof typeof DEFAULT_ROUTE_BY_ROLE] || '/portal'} replace />
-}
-
 export default function App() {
   return (
     <AuthProvider>
@@ -48,9 +51,17 @@ export default function App() {
                 </RequireAuth>
               }
             >
-              <Route index element={<RootRedirect />} />
+              <Route index element={<Home />} />
               <Route path="admin" element={<RoleWrapper allowedRoles={['admin']}><AdminConsole /></RoleWrapper>} />
               <Route path="distribution" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><DistributionConsole /></RoleWrapper>} />
+              <Route path="distribution/scraper" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Scraper /></RoleWrapper>} />
+              <Route path="distribution/prospects" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Prospects /></RoleWrapper>} />
+              <Route path="distribution/outreach" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Outreach /></RoleWrapper>} />
+              <Route path="distribution/crm" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><CRM /></RoleWrapper>} />
+              <Route path="distribution/studio" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Studio /></RoleWrapper>} />
+              <Route path="distribution/templates" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Templates /></RoleWrapper>} />
+              <Route path="distribution/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Sops /></RoleWrapper>} />
+              <Route path="template-view" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><TemplateView /></RoleWrapper>} />
               <Route path="delivery" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryConsole /></RoleWrapper>} />
               <Route path="portal" element={<RoleWrapper allowedRoles={['admin', 'delivery', 'client']}><ClientPortal /></RoleWrapper>} />
               <Route path="brain" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><BrainConsole /></RoleWrapper>} />
