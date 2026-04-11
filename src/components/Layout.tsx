@@ -8,7 +8,7 @@ export default function Layout() {
   const location = useLocation()
 
   const routes = Object.values(ROUTE_CONFIG).filter(route => route.roles.includes((role || 'client') as any))
-  const activeHome = location.pathname === '/'
+  const activeHome = location.pathname === '/' || location.pathname === '/dashboard'
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr', minHeight: '100vh', background: 'var(--bg)' }}>

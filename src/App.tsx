@@ -6,6 +6,8 @@ import RoleWrapper from './components/RoleWrapper'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Home from './pages/Home'
+import DashboardLegacy from './pages/Dashboard'
+import Tracker from './pages/Tracker'
 import AdminConsole from './pages/AdminConsole'
 import DistributionConsole from './pages/DistributionConsole'
 import DeliveryConsole from './pages/DeliveryConsole'
@@ -14,6 +16,7 @@ import BrainConsole from './pages/BrainConsole'
 import Brain from './pages/Brain'
 import ChatPage from './pages/ChatPage'
 import Documents from './pages/Documents'
+import ContentPage from './pages/Content'
 import Scraper from './pages/Scraper'
 import Prospects from './pages/Prospects'
 import Outreach from './pages/Outreach'
@@ -65,6 +68,8 @@ export default function App() {
             >
               <Route index element={<Home />} />
               <Route path="dashboard" element={<Home />} />
+              <Route path="legacy-dashboard" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><DashboardLegacy /></RoleWrapper>} />
+              <Route path="tracker" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><Tracker /></RoleWrapper>} />
               <Route path="admin" element={<RoleWrapper allowedRoles={['admin']}><AdminConsole /></RoleWrapper>} />
               <Route path="admin/control" element={<RoleWrapper allowedRoles={['admin']}><AdminControl /></RoleWrapper>} />
               <Route path="admin/finance" element={<RoleWrapper allowedRoles={['admin']}><Finance /></RoleWrapper>} />
@@ -90,8 +95,10 @@ export default function App() {
               <Route path="brain/chat" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Brain /></RoleWrapper>} />
               <Route path="brain/prompts" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><ChatPage /></RoleWrapper>} />
               <Route path="brain/repository" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Documents /></RoleWrapper>} />
+              <Route path="brain/content" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><ContentPage /></RoleWrapper>} />
               <Route path="brain/templates" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Templates /></RoleWrapper>} />
               <Route path="brain/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><Sops /></RoleWrapper>} />
+              <Route path="content" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery']}><ContentPage /></RoleWrapper>} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
