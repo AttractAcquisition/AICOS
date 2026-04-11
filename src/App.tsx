@@ -6,8 +6,6 @@ import RoleWrapper from './components/RoleWrapper'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Home from './pages/Home'
-import DashboardLegacy from './pages/Dashboard'
-import Tracker from './pages/Tracker'
 import AdminConsole from './pages/AdminConsole'
 import DistributionConsole from './pages/DistributionConsole'
 import DeliveryConsole from './pages/DeliveryConsole'
@@ -68,8 +66,6 @@ export default function App() {
             >
               <Route index element={<Home />} />
               <Route path="dashboard" element={<Home />} />
-              <Route path="legacy-dashboard" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><DashboardLegacy /></RoleWrapper>} />
-              <Route path="tracker" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><Tracker /></RoleWrapper>} />
               <Route path="admin" element={<RoleWrapper allowedRoles={['admin']}><AdminConsole /></RoleWrapper>} />
               <Route path="admin/control" element={<RoleWrapper allowedRoles={['admin']}><AdminControl /></RoleWrapper>} />
               <Route path="admin/finance" element={<RoleWrapper allowedRoles={['admin']}><Finance /></RoleWrapper>} />
