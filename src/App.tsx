@@ -25,6 +25,9 @@ import Studio from './pages/Studio'
 import Templates from './pages/Templates'
 import TemplateView from './pages/TemplateView'
 import Sops from './pages/Sops'
+import AdminControl from './pages/AdminControl'
+import Finance from './pages/Finance'
+import IncomeTracking from './pages/IncomeTracking'
 
 function LoadingScreen() {
   return (
@@ -59,6 +62,9 @@ export default function App() {
             >
               <Route index element={<Home />} />
               <Route path="admin" element={<RoleWrapper allowedRoles={['admin']}><AdminConsole /></RoleWrapper>} />
+              <Route path="admin/control" element={<RoleWrapper allowedRoles={['admin']}><AdminControl /></RoleWrapper>} />
+              <Route path="admin/finance" element={<RoleWrapper allowedRoles={['admin']}><Finance /></RoleWrapper>} />
+              <Route path="admin/income" element={<RoleWrapper allowedRoles={['admin']}><IncomeTracking /></RoleWrapper>} />
               <Route path="distribution" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><DistributionConsole /></RoleWrapper>} />
               <Route path="distribution/scraper" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Scraper /></RoleWrapper>} />
               <Route path="distribution/prospects" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Prospects /></RoleWrapper>} />

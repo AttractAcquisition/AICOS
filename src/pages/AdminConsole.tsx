@@ -1,8 +1,30 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import { Shield, DollarSign, AlertTriangle, Activity, Users } from 'lucide-react'
+import { Shield, DollarSign, AlertTriangle, Activity, Users, ArrowRight, Settings, BarChart3, ReceiptText } from 'lucide-react'
+
+const MODULES = [
+  {
+    title: 'Command Center',
+    path: '/admin/control',
+    description: 'Manage auth roles, client-manager mappings, and infrastructure assignments.',
+    icon: Settings,
+  },
+  {
+    title: 'Finance Dashboard',
+    path: '/admin/finance',
+    description: 'Review monthly revenue, margins, and burn against target.',
+    icon: BarChart3,
+  },
+  {
+    title: 'Capital Flow',
+    path: '/admin/income',
+    description: 'Track ledger entries and daily cash movement.',
+    icon: ReceiptText,
+  },
+]
 
 export default function AdminConsole() {
   const [ops, setOps] = useState<any[]>([])
@@ -32,7 +54,7 @@ export default function AdminConsole() {
 
   return (
     <ConsoleShell
-      badge="AICOS / Admin"
+      badge="AIOS / Admin"
       title="Admin Console"
       subtitle="System health, finance, governance, and live operational control."
       stats={[
@@ -42,12 +64,51 @@ export default function AdminConsole() {
         { label: 'Integrations', value: alerts.integrations, icon: Activity },
       ]}
     >
+      <Panel title="Control Room Launchpad">
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          {MODULES.map(module => {
+            const Icon = module.icon
+            return (
+              <Link
+                key={module.path}
+                to={module.path}
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  border: '1px solid var(--border2)',
+                  borderRadius: 12,
+                  background: 'var(--bg2)',
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  minHeight: 150,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{module.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--grey)', marginTop: 4, lineHeight: 1.5 }}>{module.description}</div>
+                  </div>
+                  <Icon size={16} color="var(--teal)" />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', fontFamily: 'DM Mono', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 'auto' }}>
+                  Open module <ArrowRight size={12} />
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </Panel>
+
       <Panel title="Mapped Backend Objects">
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <MiniMetric label="View" value={AICOS.views.opsManagerStatus} />
           <MiniMetric label="Table" value={AICOS.tables.financialSnapshots} />
           <MiniMetric label="Table" value={AICOS.tables.ledgerEntries} />
-          <MiniMetric label="Table" value={AICOS.tables.profiles} />
+          <MiniMetric label="Table" value={AICOS.tables.approvalLogs} />
+          <MiniMetric label="Table" value={AICOS.tables.exceptionLogs} />
+          <MiniMetric label="Table" value={AICOS.tables.integrationEvents} />
         </div>
       </Panel>
 
