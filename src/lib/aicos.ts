@@ -69,7 +69,7 @@ export const CONSOLES = [
     key: 'delivery',
     title: 'Delivery Console',
     route: AICOS.routes.delivery,
-    description: 'Clients, sprints, delivery metrics, and client dashboard operations.',
+    description: 'Clients, sprints, delivery metrics, and delivery portal operations.',
     tables: [AICOS.tables.clients, AICOS.tables.sprints, AICOS.tables.deliveryMetrics, AICOS.tables.deliveryProgress, AICOS.tables.portalTasks, AICOS.tables.portalMessages, AICOS.tables.portalDocuments],
   },
   {
