@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
+import { getVisibleSopCategories, getVisibleTemplateCategories } from '../lib/library'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
+import ConsoleLibraryPanel from '../components/ConsoleLibraryPanel'
 import { Briefcase, Activity, MessageSquare, FileText, CheckCircle2, Users, ArrowRight, Layers3 } from 'lucide-react'
 
 const MODULES = [
@@ -40,17 +41,28 @@ const MODULES = [
 ]
 
 export default function DeliveryConsole() {
-  const { role, metadata_id } = useAuth()
+  const scope = 'delivery' as const
   const [clients, setClients] = useState<any[]>([])
   const [sprints, setSprints] = useState<any[]>([])
   const [metrics, setMetrics] = useState<any[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
+  const [sops, setSops] = useState<any[]>([])
   const [summary, setSummary] = useState({ total: 0, active: 0, portal: 0, complete: 0, docs: 0 })
   const db = supabase as any
 
-  useEffect(() => { load() }, [role, metadata_id])
+  useEffect(() => { load() }, [])
 
   async function load() {
-    const [clientRes, sprintRes, metricRes, portalRes, msgRes, docRes, progressRes] = await Promise.all([
+    const templateCategories = getVisibleTemplateCategories(scope)
+    const sopCategories = getVisibleSopCategories(scope)
+    const templateQuery = templateCategories.length > 0
+      ? db.from(AICOS.tables.templates).select('id, title, category, updated_at').in('category', templateCategories).order('updated_at', { ascending: false })
+      : Promise.resolve({ data: [] as any[] })
+    const sopQuery = sopCategories.length > 0
+      ? db.from(AICOS.tables.sops).select('id, title, category, status, sop_number, updated_at').in('category', sopCategories).eq('status', 'active').order('sop_number', { ascending: true })
+      : Promise.resolve({ data: [] as any[] })
+
+    const [clientRes, sprintRes, metricRes, portalRes, msgRes, docRes, progressRes, templateRes, sopRes] = await Promise.all([
       db.from(AICOS.tables.clients).select('id, business_name, status, tier, monthly_retainer, upsell_ready_flag, account_manager').order('created_at', { ascending: false }).limit(8),
       db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').order('created_at', { ascending: false }).limit(8),
       db.from(AICOS.tables.deliveryMetrics).select('*').order('date_key', { ascending: false }).limit(7),
@@ -58,6 +70,8 @@ export default function DeliveryConsole() {
       db.from(AICOS.tables.portalMessages).select('id').limit(50),
       db.from(AICOS.tables.portalDocuments).select('id').limit(50),
       db.from(AICOS.tables.deliveryProgress).select('*').limit(40),
+      templateQuery,
+      sopQuery,
     ])
 
     const clientRows = clientRes.data || []
@@ -71,6 +85,8 @@ export default function DeliveryConsole() {
     setClients(clientRows)
     setSprints(sprintRows)
     setMetrics(metricRows)
+    setTemplates(templateRes.data || [])
+    setSops(sopRes.data || [])
     setSummary({
       total: clientRows.length,
       active: clientRows.filter((c: any) => c.status === 'active').length,
@@ -166,6 +182,8 @@ export default function DeliveryConsole() {
           {metrics.length === 0 && <Empty label="No delivery metrics yet" />}
         </div>
       </Panel>
+
+      <ConsoleLibraryPanel templates={templates} sops={sops} scopeLabel="Delivery Scope" />
     </ConsoleShell>
   )
 }

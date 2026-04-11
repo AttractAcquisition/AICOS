@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
+import { getVisibleSopCategories, getVisibleTemplateCategories } from '../lib/library'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
+import ConsoleLibraryPanel from '../components/ConsoleLibraryPanel'
 import { Users, Target, CheckSquare, FileText, Search, ArrowRight, Bot, Library, ClipboardList, MessageSquare } from 'lucide-react'
 
 const MODULES = [
@@ -52,7 +54,8 @@ const MODULES = [
 ]
 
 export default function DistributionConsole() {
-  const { role, metadata_id } = useAuth()
+  const { metadata_id } = useAuth()
+  const scope = 'distribution' as const
   const [prospects, setProspects] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
   const [sops, setSops] = useState<any[]>([])
@@ -60,15 +63,26 @@ export default function DistributionConsole() {
   const [metrics, setMetrics] = useState<any[]>([])
   const db = supabase as any
 
-  useEffect(() => { load() }, [role, metadata_id])
+  useEffect(() => { load() }, [metadata_id])
 
   async function load() {
+    const templateCategories = getVisibleTemplateCategories(scope)
+    const sopCategories = getVisibleSopCategories(scope)
+
+    const templateQuery = templateCategories.length > 0
+      ? db.from(AICOS.tables.templates).select('id, title, category, updated_at').in('category', templateCategories).order('updated_at', { ascending: false })
+      : Promise.resolve({ data: [] as any[] })
+
+    const sopQuery = sopCategories.length > 0
+      ? db.from(AICOS.tables.sops).select('id, title, category, status, sop_number, updated_at').in('category', sopCategories).eq('status', 'active').order('sop_number', { ascending: true })
+      : Promise.resolve({ data: [] as any[] })
+
     const [{ data: prospectRows }, { data: metricRows }, { data: progressRows }, { data: templateRows }, { data: sopRows }] = await Promise.all([
       db.from(AICOS.tables.prospects).select('id, business_name, status, pipeline_stage, icp_tier, vertical, updated_at').order('updated_at', { ascending: false }).limit(8),
       db.from(AICOS.tables.distributionMetrics).select('*').order('date_key', { ascending: false }).limit(7),
       db.from(AICOS.tables.distributionProgress).select('*').limit(40),
-      db.from(AICOS.tables.templates).select('id, title, category, updated_at').order('updated_at', { ascending: false }).limit(5),
-      db.from(AICOS.tables.sops).select('id, title, category, status, updated_at').order('updated_at', { ascending: false }).limit(5),
+      templateQuery,
+      sopQuery,
     ])
 
     const allProspects = prospectRows || []
@@ -161,12 +175,7 @@ export default function DistributionConsole() {
         </div>
       </Panel>
 
-      <Panel title="Library Snapshot">
-        <div style={{ display: 'grid', gap: 10 }}>
-          <Row left="Templates" right={`${templates.length} latest rows loaded`} />
-          <Row left="SOPs" right={`${sops.length} latest rows loaded`} />
-        </div>
-      </Panel>
+      <ConsoleLibraryPanel templates={templates} sops={sops} scopeLabel="Distribution Scope" />
     </ConsoleShell>
   )
 }

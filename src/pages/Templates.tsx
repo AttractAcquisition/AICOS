@@ -5,6 +5,7 @@ import { formatDate } from '../lib/utils'
 import { Plus, Copy, Save, FileText, FileCode, X, Upload } from 'lucide-react'
 import { useToast } from '../lib/toast'
 import { useAuth } from '../lib/auth'
+import { getDefaultTemplateCategory, getVisibleTemplateCategories, roleToLibraryScope } from '../lib/library'
 
 // Updated interface to match Supabase's nullable return types
 interface Template { 
@@ -30,7 +31,8 @@ const CATEGORIES = [
 ]
 
 export default function Templates() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
+  const scope = roleToLibraryScope(role)
   const [templates, setTemplates]   = useState<Template[]>([])
   const [catFilter, setCatFilter]   = useState('outreach')
   const [selected, setSelected]     = useState<Template | null>(null)
@@ -42,14 +44,27 @@ export default function Templates() {
   const [associatedFiles, setAssociatedFiles] = useState<AppFile[]>([])
   const [uploading, setUploading] = useState(false)
 
-  useEffect(() => { load() }, [catFilter])
+  useEffect(() => {
+    const defaultCategory = getDefaultTemplateCategory(scope)
+    setCatFilter(prev => getVisibleTemplateCategories(scope).includes(prev) ? prev : defaultCategory)
+  }, [scope])
+
+  useEffect(() => { load() }, [catFilter, scope])
 
   async function load() {
-    const { data } = await supabase
+    const allowedCategories = getVisibleTemplateCategories(scope)
+    if (!allowedCategories.length) {
+      setTemplates([])
+      return
+    }
+
+    const query = supabase
       .from('templates')
       .select('*')
-      .eq('category', catFilter)
+      .in('category', allowedCategories)
       .order('updated_at', { ascending: false })
+
+    const { data } = await query
     
     setTemplates((data as Template[]) || [])
     setSelected(null)
@@ -80,7 +95,7 @@ async function loadFiles(templateId: string) {
 
   function newTemplate() {
     setSelected(null)
-    setEditForm({ title: '', category: catFilter, content: '' })
+    setEditForm({ title: '', category: catFilter || getDefaultTemplateCategory(scope), content: '' })
     setIsNew(true)
     setAssociatedFiles([])
   }
@@ -223,6 +238,8 @@ try {
   const charCount = editForm.content?.length || 0
   const charColor = charCount > 1024 ? 'var(--red)' : charCount > 900 ? 'var(--amber)' : 'var(--grey)'
   const vars = [...new Set(editForm.content?.match(/\{[^}]+\}/g) || [])]
+  const allowedCategories = getVisibleTemplateCategories(scope)
+  const visibleTemplates = templates.filter(t => t.category === catFilter)
 
   const handleViewTemplate = (file: any) => {
   // We build a local URL that points to our new page
@@ -237,7 +254,7 @@ try {
     <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, height: 'calc(100vh - 120px)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {CATEGORIES.map(c => (
+          {CATEGORIES.filter(c => allowedCategories.includes(c.key)).map(c => (
             <button key={c.key} onClick={() => setCatFilter(c.key)}
               style={{ background: catFilter === c.key ? 'var(--teal-faint)' : 'transparent', border: `1px solid ${catFilter === c.key ? 'var(--teal-border)' : 'transparent'}`, borderRadius: 4, padding: '9px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: 'Barlow', fontSize: 13, color: catFilter === c.key ? 'var(--teal)' : 'var(--grey)', transition: 'all 0.15s' }}>
               {c.label}
@@ -253,7 +270,7 @@ try {
         </button>
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {templates.map(t => (
+          {visibleTemplates.map(t => (
             <div key={t.id} onClick={() => selectTemplate(t)}
               style={{ padding: '10px 12px', borderRadius: 4, cursor: 'pointer', border: `1px solid ${selected?.id === t.id ? 'var(--teal)' : 'var(--border2)'}`, background: selected?.id === t.id ? 'var(--teal-faint)' : 'var(--bg2)', transition: 'all 0.15s' }}>
               <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>{t.title}</div>
@@ -263,7 +280,7 @@ try {
               </div>
             </div>
           ))}
-          {templates.length === 0 && (
+          {visibleTemplates.length === 0 && (
             <div style={{ textAlign: 'center', padding: 20, color: 'var(--grey)', fontSize: 12, fontFamily: 'DM Mono' }}>No templates in this category</div>
           )}
         </div>
@@ -280,7 +297,7 @@ try {
               <div style={{ width: 160 }}>
                 <div className="label">Category</div>
                 <select className="input" value={editForm.category} onChange={e => setEditForm(prev => ({ ...prev, category: e.target.value }))}>
-                  {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                  {CATEGORIES.filter(c => allowedCategories.includes(c.key)).map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                 </select>
               </div>
             </div>

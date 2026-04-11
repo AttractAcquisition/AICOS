@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
+import ConsoleLibraryPanel from '../components/ConsoleLibraryPanel'
 import { Shield, DollarSign, AlertTriangle, Activity, Users, ArrowRight, Settings, BarChart3, ReceiptText } from 'lucide-react'
 
 const MODULES = [
@@ -29,22 +30,28 @@ const MODULES = [
 export default function AdminConsole() {
   const [ops, setOps] = useState<any[]>([])
   const [finance, setFinance] = useState<any[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
+  const [sops, setSops] = useState<any[]>([])
   const [alerts, setAlerts] = useState({ approvals: 0, exceptions: 0, integrations: 0 })
   const db = supabase as any
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    const [opsRes, financeRes, approvalsRes, exceptionsRes, integrationsRes] = await Promise.all([
+    const [opsRes, financeRes, approvalsRes, exceptionsRes, integrationsRes, templateRes, sopRes] = await Promise.all([
       db.from(AICOS.views.opsManagerStatus).select('*').order('name', { ascending: true }),
       db.from(AICOS.tables.financialSnapshots).select('*').order('month', { ascending: false }).limit(6),
       db.from(AICOS.tables.approvalLogs).select('id', { count: 'exact', head: true }),
       db.from(AICOS.tables.exceptionLogs).select('id', { count: 'exact', head: true }),
       db.from(AICOS.tables.integrationEvents).select('id', { count: 'exact', head: true }),
+      db.from(AICOS.tables.templates).select('id, title, category, updated_at').order('updated_at', { ascending: false }),
+      db.from(AICOS.tables.sops).select('id, title, category, status, sop_number, updated_at').order('sop_number', { ascending: true }),
     ])
 
     setOps(opsRes.data || [])
     setFinance(financeRes.data || [])
+    setTemplates(templateRes.data || [])
+    setSops(sopRes.data || [])
     setAlerts({
       approvals: approvalsRes.count || 0,
       exceptions: exceptionsRes.count || 0,
@@ -111,6 +118,8 @@ export default function AdminConsole() {
           <MiniMetric label="Table" value={AICOS.tables.integrationEvents} />
         </div>
       </Panel>
+
+      <ConsoleLibraryPanel templates={templates} sops={sops} scopeLabel="Full Library" />
 
       <Panel title="Ops Manager Status">
         <div style={{ display: 'grid', gap: 10 }}>

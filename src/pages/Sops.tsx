@@ -7,6 +7,7 @@ import { useToast } from '../lib/toast'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useAuth } from '../lib/auth'
+import { getDefaultSopCategory, getVisibleSopCategories, roleToLibraryScope } from '../lib/library'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult, DroppableProvided, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 
@@ -19,6 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function Sops() {
   const { role, user } = useAuth()
+  const scope = roleToLibraryScope(role)
   const [sops, setSops] = useState<Sop[]>([])
   const [selected, setSelected] = useState<Sop | null>(null)
   const [editing, setEditing] = useState(false)
@@ -36,19 +38,19 @@ export default function Sops() {
 
   useEffect(() => {
     load()
-  }, [role])
+  }, [scope])
 
   async function load() {
-    let q = supabase.from('sops').select('*').order('sop_number', { ascending: true })
-
-    if (role === 'delivery') {
-      q = q.in('category', ['Proof Sprint', 'Proof Brand', 'Authority Brand', 'General'])
-    } else if (role === 'distribution') {
-      q = q.in('category', ['Outreach & Pipeline', 'Missed Jobs Report', 'Strategic Plan of Action', 'General'])
+    const allowedCategories = getVisibleSopCategories(scope)
+    if (!allowedCategories.length) {
+      setSops([])
+      return
     }
 
-    if (role !== 'admin') {
-      q = q.eq('status', 'active')
+    let q = supabase.from('sops').select('*').order('sop_number', { ascending: true })
+
+    if (scope !== 'admin') {
+      q = q.in('category', allowedCategories).eq('status', 'active')
     }
 
     const { data: sopsData } = await q
@@ -125,7 +127,7 @@ export default function Sops() {
 
     const newSopData = {
       title: 'New Strategic SOP',
-      category: 'General',
+      category: getDefaultSopCategory(scope),
       status: 'draft',
       content: '# New SOP\nStart writing here...',
       sop_number: nextNum,
@@ -324,6 +326,7 @@ try {
   const filtered = sops.filter(s => !filter || s.category === filter)
   const activeCount = sops.filter(s => s.status === 'active').length
   const draftCount = sops.filter(s => s.status === 'draft').length
+  const allowedCategories = getVisibleSopCategories(scope)
 
 const handleViewTemplate = (file: any) => {
   // Use backticks ( ` ) instead of single quotes ( ' ) for interpolation
@@ -358,7 +361,7 @@ const handleViewTemplate = (file: any) => {
 
         <select className="input" value={filter} onChange={e => setFilter(e.target.value)}>
           <option value="">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {CATEGORIES.filter(c => allowedCategories.includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
         </select>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -424,7 +427,7 @@ const handleViewTemplate = (file: any) => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                     <input className="input" value={editTitle} onChange={e => setEditTitle(e.target.value)} style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Playfair Display' }} placeholder="SOP Title" />
                     <select className="input" value={editCategory} onChange={e => setEditCategory(e.target.value)} style={{ width: 'fit-content', fontSize: 11 }}>
-                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      {CATEGORIES.filter(c => allowedCategories.includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                 ) : (

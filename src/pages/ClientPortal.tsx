@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
+import { getVisibleSopCategories, getVisibleTemplateCategories } from '../lib/library'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
+import ConsoleLibraryPanel from '../components/ConsoleLibraryPanel'
 import { FolderOpen, MessageSquare, CheckSquare, FileText, Briefcase, CalendarDays } from 'lucide-react'
 
 export default function ClientPortal() {
@@ -12,12 +14,24 @@ export default function ClientPortal() {
   const [tasks, setTasks] = useState<any[]>([])
   const [messages, setMessages] = useState<any[]>([])
   const [documents, setDocuments] = useState<any[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
+  const [sops, setSops] = useState<any[]>([])
   const db = supabase as any
+  const scope = 'client' as const
 
   useEffect(() => { if (metadata_id) load() }, [metadata_id, role])
 
   async function load() {
     if (!metadata_id) return
+    const templateCategories = getVisibleTemplateCategories(scope)
+    const sopCategories = getVisibleSopCategories(scope)
+    const templateQuery = templateCategories.length > 0
+      ? db.from(AICOS.tables.templates).select('id, title, category, updated_at').in('category', templateCategories).order('updated_at', { ascending: false })
+      : Promise.resolve({ data: [] as any[] })
+    const sopQuery = sopCategories.length > 0
+      ? db.from(AICOS.tables.sops).select('id, title, category, status, sop_number, updated_at').in('category', sopCategories).eq('status', 'active').order('sop_number', { ascending: true })
+      : Promise.resolve({ data: [] as any[] })
+
     const [clientRes, sprintRes, taskRes, messageRes, documentRes] = await Promise.all([
       db.from(AICOS.tables.clients).select('*').eq('id', metadata_id).maybeSingle(),
       db.from(AICOS.tables.sprints).select('*').eq('client_id', metadata_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -26,11 +40,15 @@ export default function ClientPortal() {
       db.from(AICOS.tables.portalDocuments).select('*').eq('client_id', metadata_id).order('created_at', { ascending: false }).limit(10),
     ])
 
+    const [templateRes, sopRes] = await Promise.all([templateQuery, sopQuery])
+
     setClient(clientRes.data || null)
     setSprint(sprintRes.data || null)
     setTasks(taskRes.data || [])
     setMessages(messageRes.data || [])
     setDocuments(documentRes.data || [])
+    setTemplates(templateRes.data || [])
+    setSops(sopRes.data || [])
   }
 
   return (
@@ -86,6 +104,8 @@ export default function ClientPortal() {
           {documents.length === 0 && <Empty label="No shared documents yet" />}
         </div>
       </Panel>
+
+      <ConsoleLibraryPanel templates={templates} sops={sops} scopeLabel="Client Scope" />
 
       <Panel title="Portal Tasks">
         <div style={{ display: 'grid', gap: 10 }}>
