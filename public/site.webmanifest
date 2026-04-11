@@ -1,0 +1,17 @@
+{
+  "name": "Attract Acquisition OS",
+  "short_name": "AICOS",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07100E",
+  "theme_color": "#07100E",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

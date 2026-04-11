@@ -40,13 +40,13 @@ export default function Login() {
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
-          <div style={{
-            width: 40, height: 40, background: 'var(--teal)', borderRadius: 6,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'DM Mono', fontWeight: 500, fontSize: 14, color: 'var(--bg)',
-          }}>AI</div>
+          <img
+            src="/logo.png"
+            alt="Attract Acquisition"
+            style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'contain', background: 'linear-gradient(135deg, #0d1f1c, #07100E)', border: '1px solid var(--border2)', padding: 4 }}
+          />
           <div>
-          <div style={{ fontFamily: 'Playfair Display', fontSize: 20, fontWeight: 700 }}>AICOS</div>
+            <div style={{ fontFamily: 'Playfair Display', fontSize: 20, fontWeight: 700 }}>AICOS</div>
             <div style={{ fontFamily: 'DM Mono', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--grey)', marginTop: 1 }}>Operating System</div>
           </div>
         </div>

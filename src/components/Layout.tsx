@@ -14,7 +14,11 @@ export default function Layout() {
     <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr', minHeight: '100vh', background: 'var(--bg)' }}>
       <aside style={{ borderRight: '1px solid var(--border2)', padding: 20, position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, var(--teal), #0d1f1c)' }} />
+          <img
+            src="/logo.png"
+            alt="Attract Acquisition"
+            style={{ width: 42, height: 42, borderRadius: 12, objectFit: 'contain', background: 'linear-gradient(135deg, #0d1f1c, #07100E)', border: '1px solid var(--border2)', padding: 4 }}
+          />
           <div>
             <div style={{ fontFamily: 'DM Mono', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--grey)' }}>AIOS</div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>Attract Acquisition OS</div>
