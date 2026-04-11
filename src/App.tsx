@@ -64,6 +64,7 @@ export default function App() {
               }
             >
               <Route index element={<Home />} />
+              <Route path="dashboard" element={<Home />} />
               <Route path="admin" element={<RoleWrapper allowedRoles={['admin']}><AdminConsole /></RoleWrapper>} />
               <Route path="admin/control" element={<RoleWrapper allowedRoles={['admin']}><AdminControl /></RoleWrapper>} />
               <Route path="admin/finance" element={<RoleWrapper allowedRoles={['admin']}><Finance /></RoleWrapper>} />

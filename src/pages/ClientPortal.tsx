@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import { FolderOpen, MessageSquare, CheckSquare, FileText, Briefcase } from 'lucide-react'
+import { FolderOpen, MessageSquare, CheckSquare, FileText, Briefcase, CalendarDays } from 'lucide-react'
 
 export default function ClientPortal() {
   const { metadata_id, role } = useAuth()
@@ -35,7 +35,7 @@ export default function ClientPortal() {
 
   return (
     <ConsoleShell
-      badge="AICOS / Client Portal"
+      badge="AIOS / Client Portal"
       title="Client Portal"
       subtitle="Client-facing delivery, proof sprint progress, messages, and shared assets."
       stats={[
@@ -45,12 +45,36 @@ export default function ClientPortal() {
         { label: 'Messages', value: messages.length, icon: MessageSquare },
       ]}
     >
+      <Panel title="Portal Overview">
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          <MiniMetric label="Client" value={client?.business_name || 'Pending'} icon={Briefcase} />
+          <MiniMetric label="Current Sprint" value={sprint ? `#${sprint.sprint_number || 1} · ${sprint.status || 'setup'}` : 'No active sprint'} icon={CalendarDays} />
+          <MiniMetric label="Tasks" value={tasks.length} icon={CheckSquare} />
+          <MiniMetric label="Messages" value={messages.length} icon={MessageSquare} />
+          <MiniMetric label="Documents" value={documents.length} icon={FileText} />
+        </div>
+      </Panel>
+
+      <Panel title="Current Sprint">
+        {sprint ? (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <Row left="Sprint Status" right={sprint.status || 'setup'} />
+            <Row left="Start Date" right={sprint.start_date || '—'} />
+            <Row left="Leads Generated" right={`${sprint.leads_generated || 0}`} />
+            <Row left="Revenue Attributed" right={`R${Number(sprint.revenue_attributed || 0).toLocaleString('en-ZA')}`} />
+          </div>
+        ) : (
+          <Empty label="No active sprint found for this client" />
+        )}
+      </Panel>
+
       <Panel title="Mapped Backend Objects">
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <MiniMetric label="Table" value={AICOS.tables.clients} />
-          <MiniMetric label="Table" value={AICOS.tables.sprints} />
-          <MiniMetric label="Table" value={AICOS.tables.portalTasks} />
-          <MiniMetric label="Table" value={AICOS.tables.portalMessages} />
+          <MiniMetric label="Table" value={AICOS.tables.clients} icon={Briefcase} />
+          <MiniMetric label="Table" value={AICOS.tables.sprints} icon={FolderOpen} />
+          <MiniMetric label="Table" value={AICOS.tables.portalTasks} icon={CheckSquare} />
+          <MiniMetric label="Table" value={AICOS.tables.portalMessages} icon={MessageSquare} />
+          <MiniMetric label="Table" value={AICOS.tables.portalDocuments} icon={FileText} />
         </div>
       </Panel>
 
@@ -75,7 +99,7 @@ export default function ClientPortal() {
       <Panel title="Latest Messages">
         <div style={{ display: 'grid', gap: 10 }}>
           {messages.map(m => (
-            <Row key={m.id} left={m.message_text} right={m.sender_kind || 'internal'} />
+            <Row key={m.id} left={m.message_text} right={`${m.sender_kind || 'internal'} · ${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}`} />
           ))}
           {messages.length === 0 && <Empty label="No portal messages yet" />}
         </div>
@@ -84,10 +108,10 @@ export default function ClientPortal() {
   )
 }
 
-function MiniMetric({ label, value }: { label: string; value: string }) {
+function MiniMetric({ label, value, icon: Icon }: { label: string; value: string | number; icon: any }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', border: '1px solid var(--border2)', borderRadius: 10, background: 'var(--bg2)' }}>
-      <FileText size={14} color="var(--teal)" />
+      <Icon size={14} color="var(--teal)" />
       <div>
         <div style={{ fontSize: 9, fontFamily: 'DM Mono', color: 'var(--grey)', textTransform: 'uppercase' }}>{label}</div>
         <div style={{ fontSize: 13, color: 'var(--white)' }}>{value}</div>
