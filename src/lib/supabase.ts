@@ -4,7 +4,8 @@ import type { Database as DatabaseSchema } from './database.types'
 // 1. ADD THIS LINE: This makes the Database type visible to your entire app
 export type Database = DatabaseSchema
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+const DEFAULT_SUPABASE_URL = 'https://fgyvcyksgbivhrqoxkmj.supabase.co'
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || DEFAULT_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 export const supabase = createClient<Database>(
