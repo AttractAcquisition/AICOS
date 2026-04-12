@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICOS Template Coverage Map</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: #e2e2dd;
+    --border-strong: #c8c8c2;
+    --text-primary: #1a1a18;
+    --text-secondary: #5c5c58;
+    --text-muted: #9a9a94;
+    --navy: #0d2240;
+    --navy-mid: #1b3a6b;
+
+    --ops-bg: #e1f5ee; --ops-text: #0f6e56;
+    --del-bg: #e6f1fb; --del-text: #185fa5;
+    --dist-bg: #eeedfe; --dist-text: #534ab7;
+    --fin-bg: #faeeda; --fin-text: #854f0b;
+    --adm-bg: #fbeaf0; --adm-text: #993556;
+    --pri-bg: #faece7; --pri-text: #993c1d;
+    --acc-bg: #eaf3de; --acc-text: #3b6d11;
+    --sup-bg: #fcebeb; --sup-text: #a32d2d;
+    --con-bg: #f1effe; --con-text: #4a3aa0;
+    --gen-bg: #f1efe8; --gen-text: #5f5e5a;
+  }
+
+  body {
+    font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    padding: 2rem 1.5rem 4rem;
+    min-width: 1000px;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  header { margin-bottom: 1.75rem; }
+  header h1 { font-size: 22px; font-weight: 600; color: var(--navy); letter-spacing: -0.02em; margin-bottom: 4px; }
+  header p { font-size: 13px; color: var(--text-secondary); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  .legend-label { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-right: 4px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; white-space: nowrap; line-height: 1.6; }
+  .b-ops  { background: var(--ops-bg);  color: var(--ops-text); }
+  .b-del  { background: var(--del-bg);  color: var(--del-text); }
+  .b-dist { background: var(--dist-bg); color: var(--dist-text);}
+  .b-fin  { background: var(--fin-bg);  color: var(--fin-text); }
+  .b-adm  { background: var(--adm-bg);  color: var(--adm-text); }
+  .b-pri  { background: var(--pri-bg);  color: var(--pri-text); }
+  .b-acc  { background: var(--acc-bg);  color: var(--acc-text); }
+  .b-sup  { background: var(--sup-bg);  color: var(--sup-text); }
+  .b-con  { background: var(--con-bg);  color: var(--con-text); }
+  .b-gen  { background: var(--gen-bg);  color: var(--gen-text); }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 0.5px solid var(--border-strong);
+    background: var(--surface);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+
+  col.c-num   { width: 32px; }
+  col.c-name  { width: 210px; }
+  col.c-cat   { width: 130px; }
+  col.c-owner { width: 130px; }
+  col.c-pages { width: 190px; }
+  col.c-tables{ width: 230px; }
+  col.c-desc  { width: 260px; }
+  col.c-wflow { width: 170px; }
+
+  thead tr th {
+    background: var(--navy);
+    color: rgba(255,255,255,0.85);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 10px 12px;
+    text-align: left;
+    border-right: 0.5px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  thead tr th:last-child { border-right: none; }
+
+  tr.section-row td {
+    background: var(--navy-mid);
+    color: rgba(255,255,255,0.9);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 6px 12px;
+    border-top: 2px solid var(--navy);
+  }
+
+  tbody tr td {
+    padding: 8px 12px;
+    border-bottom: 0.5px solid var(--border);
+    border-right: 0.5px solid var(--border);
+    vertical-align: top;
+    color: var(--text-primary);
+    line-height: 1.45;
+  }
+  tbody tr td:last-child { border-right: none; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:not(.section-row):nth-child(even) td { background: #fafaf8; }
+  tbody tr:not(.section-row):nth-child(odd) td  { background: var(--surface); }
+  tbody tr:not(.section-row):hover td { background: #f0f4ff; transition: background 0.12s; }
+
+  .num { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--text-muted); }
+  .tpl-name { font-weight: 500; font-size: 12px; color: var(--text-primary); }
+  .note { font-size: 10px; color: var(--adm-text); font-style: italic; margin-top: 2px; }
+  .owner-cell { display: flex; flex-wrap: wrap; gap: 3px; }
+  .desc-text { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+  .pages-text { font-size: 11px; color: var(--text-primary); line-height: 1.6; }
+  .tables-text { font-size: 10px; color: var(--text-secondary); font-family: 'DM Mono', monospace; line-height: 1.7; }
+  .wflow-text { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+  .domain-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+  .d-dist { background: var(--dist-bg); color: var(--dist-text); }
+  .d-del  { background: var(--del-bg);  color: var(--del-text); }
+  .d-ops  { background: var(--ops-bg);  color: var(--ops-text); }
+  .d-fin  { background: var(--fin-bg);  color: var(--fin-text); }
+  .d-adm  { background: var(--adm-bg);  color: var(--adm-text); }
+  .d-con  { background: var(--con-bg);  color: var(--con-text); }
+  .d-sup  { background: var(--sup-bg);  color: var(--sup-text); }
+  .d-gen  { background: var(--gen-bg);  color: var(--gen-text); }
+
+  footer { margin-top: 1.5rem; font-size: 11px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AICOS Template Coverage Map</h1>
+  <p>Generated from the live <code>templates</code> table · 2026-04-12 · 62 templates across 11 categories</p>
+</header>
+
+<div class="legend">
+  <span class="legend-label">Categories:</span>
+  <span class="badge b-dist">Distribution</span>
+  <span class="badge b-del">Delivery</span>
+  <span class="badge b-con">Content</span>
+  <span class="badge b-fin">Finance</span>
+  <span class="badge b-ops">Operations / Admin</span>
+  <span class="badge b-sup">Support</span>
+  <span class="badge b-gen">General</span>
+</div>
+
+<div class="table-wrap">
+<table>
+<colgroup>
+  <col class="c-num">
+  <col class="c-name">
+  <col class="c-cat">
+  <col class="c-owner">
+  <col class="c-pages">
+  <col class="c-tables">
+  <col class="c-desc">
+  <col class="c-wflow">
+</colgroup>
+<thead>
+<tr>
+  <th>#</th>
+  <th>Template Name</th>
+  <th>Category</th>
+  <th>Owner</th>
+  <th>Pages</th>
+  <th>Tables</th>
+  <th>Description</th>
+  <th>Workflow</th>
+</tr>
+</thead>
+<tbody>
+
+<!-- OUTREACH & PIPELINE -->
+<tr class="section-row"><td colspan="8">Outreach &amp; Pipeline — 11 templates</td></tr>
+<tr>
+  <td class="num">1</td>
+  <td><span class="tpl-name">Cold Intro — WhatsApp</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Hi {owner_name}, I came across {business_name} in {suburb} and noticed something worth sharing…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">2</td>
+  <td><span class="tpl-name">Explainer Call Ask</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">I'd love to jump on a quick 20-min call to show you the roadmap to capture that gap…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">3</td>
+  <td><span class="tpl-name">Follow-up 48h</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Hi {owner_name}, just surfacing that report for {business_name}. I know the {vertical} work in {suburb} keeps you on-site…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">4</td>
+  <td><span class="tpl-name">Follow-up 96h</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Hi {owner_name}, just checking if you caught that report for {business_name}. Other {vertical} owners in Cape Town were surprised…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">5</td>
+  <td><span class="tpl-name">Meta Leads WA Response</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Hey {owner_name}, here is the Missed Jobs Report you requested for {business_name}: [Link]…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">6</td>
+  <td><span class="tpl-name">MJR Delivery Frame</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Hey {owner_name}, here is the report for {business_name}: [Link]. The number that stood out for the {suburb} area was…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">7</td>
+  <td><span class="tpl-name">Objection — Already Have Someone</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Completely understand {owner_name} — most businesses we work with had someone too. The report is still worth a look…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">8</td>
+  <td><span class="tpl-name">Objection — No Budget</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Completely understand — timing is everything. The report is free, so no budget is needed to see the data for {business_name}…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">9</td>
+  <td><span class="tpl-name">Objection — Not Interested</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">No problem at all {owner_name}. If circumstances change and you want to see how many jobs {business_name} is missing…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">10</td>
+  <td><span class="tpl-name">Objection — Too Busy</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Makes total sense — {vertical} work in {suburb} is non-stop. That's actually why we built this…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+<tr>
+  <td class="num">11</td>
+  <td><span class="tpl-name">Soft Close — MJR Acceptance</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">No stress — quick context. It's a short breakdown of {suburb} specifically: how many people are searching for {vertical} each month…</td>
+  <td class="wflow-text">Lead sourcing · MJR delivery · follow-up · booking</td>
+</tr>
+
+<!-- MISSED JOBS REPORT -->
+<tr class="section-row"><td colspan="8">Missed Jobs Report — 4 templates</td></tr>
+<tr>
+  <td class="num">12</td>
+  <td><span class="tpl-name">Discovery Call Booking Confirmation</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Discovery call booking confirmation — locks the time and preps the client.</td>
+  <td class="wflow-text">MJR creation · call prep · booking · objection handling</td>
+</tr>
+<tr>
+  <td class="num">13</td>
+  <td><span class="tpl-name">Discovery Call Prep Brief</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Discovery call prep brief — organises the call context before the meeting.</td>
+  <td class="wflow-text">MJR creation · call prep · booking · objection handling</td>
+</tr>
+<tr>
+  <td class="num">14</td>
+  <td><span class="tpl-name">Explainer Call Script</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Full discovery call script. Goal: transition from MJR to a 14-day Proof Sprint. Duration: 20 minutes.</td>
+  <td class="wflow-text">MJR creation · call prep · booking · objection handling</td>
+</tr>
+<tr>
+  <td class="num">15</td>
+  <td><span class="tpl-name">Missed Jobs Report Template</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">Outreach · Prospects · Scraper</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Canonical MJR report template structure.</td>
+  <td class="wflow-text">MJR creation · call prep · booking · objection handling</td>
+</tr>
+
+<!-- SPOA -->
+<tr class="section-row"><td colspan="8">Strategic Plan of Action — 2 templates</td></tr>
+<tr>
+  <td class="num">16</td>
+  <td><span class="tpl-name">SPOA Delivery Message</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">SPOA · Outreach · Prospects</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">SPOA delivery message — hands the plan to the client cleanly.</td>
+  <td class="wflow-text">SPOA build · delivery · follow-up · handoff</td>
+</tr>
+<tr>
+  <td class="num">17</td>
+  <td><span class="tpl-name">Strategic Plan of Action Template</span></td>
+  <td><span class="domain-pill d-dist">Distribution</span></td>
+  <td><div class="owner-cell"><span class="badge b-dist">Distribution lead</span></div></td>
+  <td class="pages-text">SPOA · Outreach · Prospects</td>
+  <td class="tables-text">templates · prospects · distro_metrics · app_files</td>
+  <td class="desc-text">Canonical SPOA document structure and copy standards.</td>
+  <td class="wflow-text">SPOA build · delivery · follow-up · handoff</td>
+</tr>
+
+<!-- PROOF SPRINT -->
+<tr class="section-row"><td colspan="8">Proof Sprint — 11 templates</td></tr>
+<tr>
+  <td class="num">18</td>
+  <td><span class="tpl-name">Meta Ads Brief — Proof Sprint</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Strategic logic driving creative-to-audience assignments. Core principle: intent matching — cold audiences need proof.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">19</td>
+  <td><span class="tpl-name">Proof Sprint Closeout Checklist</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Proof sprint closeout checklist — wraps the sprint cleanly for delivery managers.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">20</td>
+  <td><span class="tpl-name">Proof Sprint Daily Ops Log</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Proof sprint daily ops log — tracks the live sprint day by day.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">21</td>
+  <td><span class="tpl-name">Proof Sprint Launch Checklist</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Proof sprint launch checklist — confirms the sprint is ready to launch.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">22</td>
+  <td><span class="tpl-name">Proof Sprint Monitoring Sheet</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Proof sprint monitoring sheet — tracks live results and optimisation actions.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">23</td>
+  <td><span class="tpl-name">Proof Sprint Offer</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Canonical Proof Sprint commercial offer document.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">24</td>
+  <td><span class="tpl-name">Proof Sprint Onboarding Brief</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Proof sprint onboarding brief — confirms assets, access, and timing with the client.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">25</td>
+  <td><span class="tpl-name">Proof Sprint Results Template</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Canonical 14-day sprint results report template.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">26</td>
+  <td><span class="tpl-name">Proof Sprint Setup Checklist</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Proof sprint setup checklist — verifies every launch item before go-live.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">27</td>
+  <td><span class="tpl-name">Proof Sprint Terms and Conditions</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Canonical Proof Sprint terms and conditions document.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+<tr>
+  <td class="num">28</td>
+  <td><span class="tpl-name">Results Meeting Script</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · SprintDetail · SprintDashboard · LivePipelineDashboard</td>
+  <td class="tables-text">templates · clients · proof_sprints · sprint_daily_log · delivery_metrics</td>
+  <td class="desc-text">Post-sprint results meeting script. Goal: convert successful sprint into Authority Brand retainer. Duration: 30 minutes.</td>
+  <td class="wflow-text">Sprint onboarding · setup · launch · daily ops · closeout</td>
+</tr>
+
+<!-- PROOF BRAND -->
+<tr class="section-row"><td colspan="8">Proof Brand — 10 templates</td></tr>
+<tr>
+  <td class="num">29</td>
+  <td><span class="tpl-name">Authority Brand Upsell Pitch</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Hi {owner_name} — we are 90 days in and the numbers speak for themselves. I want to show you what the Authority Brand tier adds…</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">30</td>
+  <td><span class="tpl-name">Case Study Capture Template</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Case study capture template — turns results into reusable proof assets.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">31</td>
+  <td>
+    <span class="tpl-name">Proof Brand Client Service Agreement</span>
+    <div class="note">⚠ Duplicate row in source data (×2)</div>
+  </td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Canonical Proof Brand client service agreement.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">32</td>
+  <td><span class="tpl-name">Proof Brand Monthly Report</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Proof brand monthly report — summarises monthly performance for delivery managers.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">33</td>
+  <td><span class="tpl-name">Proof Brand Offer</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Canonical Proof Brand commercial offer document.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">34</td>
+  <td><span class="tpl-name">Proof Brand Onboarding Brief</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Proof brand onboarding brief — collects assets, access, and kickoff details.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">35</td>
+  <td><span class="tpl-name">Proof Brand Pack QA Checklist</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Proof brand pack QA checklist — reviews the delivery pack before publish.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">36</td>
+  <td><span class="tpl-name">Proof Brand Setup Checklist</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Proof brand setup checklist — verifies the build before launch.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+<tr>
+  <td class="num">37</td>
+  <td><span class="tpl-name">Testimonial Capture Template</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · ProofBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Testimonial capture template — collects proof from successful client work.</td>
+  <td class="wflow-text">Proof brand onboarding · setup · QA · reporting · proof capture</td>
+</tr>
+
+<!-- AUTHORITY BRAND -->
+<tr class="section-row"><td colspan="8">Authority Brand — 8 templates</td></tr>
+<tr>
+  <td class="num">38</td>
+  <td>
+    <span class="tpl-name">Authority Brand Client Service Agreement</span>
+    <div class="note">⚠ Duplicate row in source data (×2)</div>
+  </td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · AuthorityBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Canonical Authority Brand client service agreement.</td>
+  <td class="wflow-text">Authority brand onboarding · setup · review · retention</td>
+</tr>
+<tr>
+  <td class="num">39</td>
+  <td><span class="tpl-name">Authority Brand Content Calendar</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · AuthorityBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Authority brand content calendar — plans the human-led content cycle for content leads.</td>
+  <td class="wflow-text">Authority brand onboarding · setup · review · retention</td>
+</tr>
+<tr>
+  <td class="num">40</td>
+  <td><span class="tpl-name">Authority Brand Monthly Review</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · AuthorityBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Authority brand monthly review — assesses performance and defines next actions.</td>
+  <td class="wflow-text">Authority brand onboarding · setup · review · retention</td>
+</tr>
+<tr>
+  <td class="num">41</td>
+  <td><span class="tpl-name">Authority Brand Offer</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · AuthorityBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Canonical Authority Brand commercial offer document.</td>
+  <td class="wflow-text">Authority brand onboarding · setup · review · retention</td>
+</tr>
+<tr>
+  <td class="num">42</td>
+  <td><span class="tpl-name">Authority Brand Onboarding Brief</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · AuthorityBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Authority brand onboarding brief — collects authority inputs and creative direction.</td>
+  <td class="wflow-text">Authority brand onboarding · setup · review · retention</td>
+</tr>
+<tr>
+  <td class="num">43</td>
+  <td><span class="tpl-name">Authority Brand Review Deck</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · AuthorityBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Authority brand review deck — presents results and expansion options to the client.</td>
+  <td class="wflow-text">Authority brand onboarding · setup · review · retention</td>
+</tr>
+<tr>
+  <td class="num">44</td>
+  <td><span class="tpl-name">Authority Brand Setup Checklist</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery lead</span></div></td>
+  <td class="pages-text">Clients · AuthorityBrand · ClientPortal</td>
+  <td class="tables-text">templates · clients · proof_sprints · portal_messages · portal_tasks · portal_documents · delivery_metrics</td>
+  <td class="desc-text">Authority brand setup checklist — verifies the Tier 2 build before launch.</td>
+  <td class="wflow-text">Authority brand onboarding · setup · review · retention</td>
+</tr>
+
+<!-- DELIVERY OPS -->
+<tr class="section-row"><td colspan="8">Delivery Ops — 2 templates</td></tr>
+<tr>
+  <td class="num">45</td>
+  <td><span class="tpl-name">Client Portal Welcome Guide</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery / client success</span></div></td>
+  <td class="pages-text">ClientPortal · DeliveryPortal · Documents</td>
+  <td class="tables-text">templates · portal_messages · portal_tasks · portal_documents · app_files · clients</td>
+  <td class="desc-text">Client portal welcome guide — explains how clients should use the workspace.</td>
+  <td class="wflow-text">Client workspace · reporting · handoffs · escalations</td>
+</tr>
+<tr>
+  <td class="num">46</td>
+  <td><span class="tpl-name">Weekly Client Report Template</span></td>
+  <td><span class="domain-pill d-del">Delivery</span></td>
+  <td><div class="owner-cell"><span class="badge b-del">Delivery / client success</span></div></td>
+  <td class="pages-text">ClientPortal · DeliveryPortal · Documents</td>
+  <td class="tables-text">templates · portal_messages · portal_tasks · portal_documents · app_files · clients</td>
+  <td class="desc-text">Weekly client report — keeps clients informed with live data.</td>
+  <td class="wflow-text">Client workspace · reporting · handoffs · escalations</td>
+</tr>
+
+<!-- CONTENT PRODUCTION -->
+<tr class="section-row"><td colspan="8">Content Production — 6 templates</td></tr>
+<tr>
+  <td class="num">47</td>
+  <td><span class="tpl-name">Content Approval Form</span></td>
+  <td><span class="domain-pill d-con">Content</span></td>
+  <td><div class="owner-cell"><span class="badge b-con">Content lead</span></div></td>
+  <td class="pages-text">Content · Documents · Brain</td>
+  <td class="tables-text">templates · app_files · portal_documents · aa_documents · aa_chunks</td>
+  <td class="desc-text">Content approval form — records signoff before publishing.</td>
+  <td class="wflow-text">Content planning · scripting · QA · approval · publish</td>
+</tr>
+<tr>
+  <td class="num">48</td>
+  <td><span class="tpl-name">Content Brief Template</span></td>
+  <td><span class="domain-pill d-con">Content</span></td>
+  <td><div class="owner-cell"><span class="badge b-con">Content lead</span></div></td>
+  <td class="pages-text">Content · Documents · Brain</td>
+  <td class="tables-text">templates · app_files · portal_documents · aa_documents · aa_chunks</td>
+  <td class="desc-text">Content brief — defines the angle, format, and objective for each piece.</td>
+  <td class="wflow-text">Content planning · scripting · QA · approval · publish</td>
+</tr>
+<tr>
+  <td class="num">49</td>
+  <td><span class="tpl-name">Content Calendar Template</span></td>
+  <td><span class="domain-pill d-con">Content</span></td>
+  <td><div class="owner-cell"><span class="badge b-con">Content lead</span></div></td>
+  <td class="pages-text">Content · Documents · Brain</td>
+  <td class="tables-text">templates · app_files · portal_documents · aa_documents · aa_chunks</td>
+  <td class="desc-text">Content calendar — plans the full publishing schedule.</td>
+  <td class="wflow-text">Content planning · scripting · QA · approval · publish</td>
+</tr>
+<tr>
+  <td class="num">50</td>
+  <td><span class="tpl-name">Content Publish Log</span></td>
+  <td><span class="domain-pill d-con">Content</span></td>
+  <td><div class="owner-cell"><span class="badge b-con">Content lead</span></div></td>
+  <td class="pages-text">Content · Documents · Brain</td>
+  <td class="tables-text">templates · app_files · portal_documents · aa_documents · aa_chunks</td>
+  <td class="desc-text">Content publish log — records what went live and when.</td>
+  <td class="wflow-text">Content planning · scripting · QA · approval · publish</td>
+</tr>
+<tr>
+  <td class="num">51</td>
+  <td><span class="tpl-name">Content QA Checklist</span></td>
+  <td><span class="domain-pill d-con">Content</span></td>
+  <td><div class="owner-cell"><span class="badge b-con">Content lead</span></div></td>
+  <td class="pages-text">Content · Documents · Brain</td>
+  <td class="tables-text">templates · app_files · portal_documents · aa_documents · aa_chunks</td>
+  <td class="desc-text">Content QA checklist — checks copy, visuals, and links before publish.</td>
+  <td class="wflow-text">Content planning · scripting · QA · approval · publish</td>
+</tr>
+<tr>
+  <td class="num">52</td>
+  <td><span class="tpl-name">Content Script Template</span></td>
+  <td><span class="domain-pill d-con">Content</span></td>
+  <td><div class="owner-cell"><span class="badge b-con">Content lead</span></div></td>
+  <td class="pages-text">Content · Documents · Brain</td>
+  <td class="tables-text">templates · app_files · portal_documents · aa_documents · aa_chunks</td>
+  <td class="desc-text">Content script — drafts the actual post or reel copy.</td>
+  <td class="wflow-text">Content planning · scripting · QA · approval · publish</td>
+</tr>
+
+<!-- SUPPORT & ESCALATIONS -->
+<tr class="section-row"><td colspan="8">Support &amp; Escalations — 1 template</td></tr>
+<tr>
+  <td class="num">53</td>
+  <td><span class="tpl-name">Delivery Portal Escalation Log</span></td>
+  <td><span class="domain-pill d-sup">Support</span></td>
+  <td><div class="owner-cell"><span class="badge b-sup">Delivery ops</span></div></td>
+  <td class="pages-text">ClientPortal · DeliveryPortal</td>
+  <td class="tables-text">templates · portal_messages · portal_tasks · portal_documents · clients</td>
+  <td class="desc-text">Delivery portal escalation log — tracks blockers and resolutions for support leads.</td>
+  <td class="wflow-text">Issue tracking · blocker resolution · escalation handling</td>
+</tr>
+
+<!-- FINANCE -->
+<tr class="section-row"><td colspan="8">Finance — 4 templates</td></tr>
+<tr>
+  <td class="num">54</td>
+  <td><span class="tpl-name">Billing Invoice Template</span></td>
+  <td><span class="domain-pill d-fin">Finance</span></td>
+  <td><div class="owner-cell"><span class="badge b-fin">Finance / ops lead</span></div></td>
+  <td class="pages-text">Finance · IncomeTracking · AdminControl</td>
+  <td class="tables-text">templates · monthly_revenue · ledger · tracking_model</td>
+  <td class="desc-text">Billing invoice — requests payment for fees or retainers.</td>
+  <td class="wflow-text">Billing · reminders · collections · finance review</td>
+</tr>
+<tr>
+  <td class="num">55</td>
+  <td><span class="tpl-name">Collections Follow-up Template</span></td>
+  <td><span class="domain-pill d-fin">Finance</span></td>
+  <td><div class="owner-cell"><span class="badge b-fin">Finance / ops lead</span></div></td>
+  <td class="pages-text">Finance · IncomeTracking · AdminControl</td>
+  <td class="tables-text">templates · monthly_revenue · ledger · tracking_model</td>
+  <td class="desc-text">Collections follow-up — chases overdue balances professionally.</td>
+  <td class="wflow-text">Billing · reminders · collections · finance review</td>
+</tr>
+<tr>
+  <td class="num">56</td>
+  <td><span class="tpl-name">Finance Dashboard Summary</span></td>
+  <td><span class="domain-pill d-fin">Finance</span></td>
+  <td><div class="owner-cell"><span class="badge b-fin">Finance / ops lead</span></div></td>
+  <td class="pages-text">Finance · IncomeTracking · AdminControl</td>
+  <td class="tables-text">templates · monthly_revenue · ledger · tracking_model</td>
+  <td class="desc-text">Finance dashboard summary — reports income, costs, and cash position.</td>
+  <td class="wflow-text">Billing · reminders · collections · finance review</td>
+</tr>
+<tr>
+  <td class="num">57</td>
+  <td><span class="tpl-name">Payment Reminder Template</span></td>
+  <td><span class="domain-pill d-fin">Finance</span></td>
+  <td><div class="owner-cell"><span class="badge b-fin">Finance / ops lead</span></div></td>
+  <td class="pages-text">Finance · IncomeTracking · AdminControl</td>
+  <td class="tables-text">templates · monthly_revenue · ledger · tracking_model</td>
+  <td class="desc-text">Payment reminder — follows up on due invoices.</td>
+  <td class="wflow-text">Billing · reminders · collections · finance review</td>
+</tr>
+
+<!-- GENERAL -->
+<tr class="section-row"><td colspan="8">General — 5 templates</td></tr>
+<tr>
+  <td class="num">58</td>
+  <td><span class="tpl-name">A5 Detailing Flyer — Front</span></td>
+  <td><span class="domain-pill d-gen">General</span></td>
+  <td><div class="owner-cell"><span class="badge b-gen">Delivery / ops</span></div></td>
+  <td class="pages-text">ClientPortal · Documents · AdminControl</td>
+  <td class="tables-text">templates · portal_documents · app_files · profiles</td>
+  <td class="desc-text">A5 print flyer front — detailing vertical collateral.</td>
+  <td class="wflow-text">Cross-functional support · collateral · offboarding</td>
+</tr>
+<tr>
+  <td class="num">59</td>
+  <td><span class="tpl-name">A5 General Flyer — Front</span></td>
+  <td><span class="domain-pill d-gen">General</span></td>
+  <td><div class="owner-cell"><span class="badge b-gen">Delivery / ops</span></div></td>
+  <td class="pages-text">ClientPortal · Documents · AdminControl</td>
+  <td class="tables-text">templates · portal_documents · app_files · profiles</td>
+  <td class="desc-text">A5 print flyer front — general-purpose collateral.</td>
+  <td class="wflow-text">Cross-functional support · collateral · offboarding</td>
+</tr>
+<tr>
+  <td class="num">60</td>
+  <td><span class="tpl-name">A5 Trades Flyer — Front</span></td>
+  <td><span class="domain-pill d-gen">General</span></td>
+  <td><div class="owner-cell"><span class="badge b-gen">Delivery / ops</span></div></td>
+  <td class="pages-text">ClientPortal · Documents · AdminControl</td>
+  <td class="tables-text">templates · portal_documents · app_files · profiles</td>
+  <td class="desc-text">A5 print flyer front — trades vertical collateral.</td>
+  <td class="wflow-text">Cross-functional support · collateral · offboarding</td>
+</tr>
+<tr>
+  <td class="num">61</td>
+  <td><span class="tpl-name">Alex Anderson Business Card</span></td>
+  <td><span class="domain-pill d-gen">General</span></td>
+  <td><div class="owner-cell"><span class="badge b-gen">Delivery / ops</span></div></td>
+  <td class="pages-text">ClientPortal · Documents · AdminControl</td>
+  <td class="tables-text">templates · portal_documents · app_files · profiles</td>
+  <td class="desc-text">Business card design — front and back.</td>
+  <td class="wflow-text">Cross-functional support · collateral · offboarding</td>
+</tr>
+<tr>
+  <td class="num">62</td>
+  <td><span class="tpl-name">Renewal / Offboarding Checklist</span></td>
+  <td><span class="domain-pill d-gen">General</span></td>
+  <td><div class="owner-cell"><span class="badge b-gen">Delivery / ops</span></div></td>
+  <td class="pages-text">ClientPortal · Documents · AdminControl</td>
+  <td class="tables-text">templates · portal_documents · app_files · profiles</td>
+  <td class="desc-text">Renewal and offboarding checklist — closes out or renews accounts cleanly.</td>
+  <td class="wflow-text">Cross-functional support · collateral · offboarding</td>
+</tr>
+
+<!-- ADMIN -->
+<tr class="section-row"><td colspan="8">Admin — 8 templates</td></tr>
+<tr>
+  <td class="num">63</td>
+  <td><span class="tpl-name">Access Request / Role Change Form</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">Access request and role change form — controls permissions cleanly for ops leads.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+<tr>
+  <td class="num">64</td>
+  <td><span class="tpl-name">Backup / Security Checklist</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">Backup and security checklist — verifies backups and access hygiene.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+<tr>
+  <td class="num">65</td>
+  <td><span class="tpl-name">Daily Command Center Review Sheet</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">Daily command center review sheet — sets priorities and tracks blockers for principals.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+<tr>
+  <td class="num">66</td>
+  <td><span class="tpl-name">Knowledge Base Change Request</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">Knowledge base change request — updates SOPs and reference docs.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+<tr>
+  <td class="num">67</td>
+  <td><span class="tpl-name">KPI Review Sheet</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">KPI review sheet — tracks weekly and monthly performance for ops leads.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+<tr>
+  <td class="num">68</td>
+  <td><span class="tpl-name">Role Registry Change Form</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">Role registry change form — logs access changes for admin leads.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+<tr>
+  <td class="num">69</td>
+  <td><span class="tpl-name">SOP Publishing Checklist</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">SOP publishing checklist — confirms a draft SOP is ready to go live.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+<tr>
+  <td class="num">70</td>
+  <td><span class="tpl-name">Staff Onboarding Pack</span></td>
+  <td><span class="domain-pill d-ops">Operations</span></td>
+  <td><div class="owner-cell"><span class="badge b-ops">Admin / ops lead</span></div></td>
+  <td class="pages-text">AdminControl · Dashboard · Brain · Templates · Sops</td>
+  <td class="tables-text">templates · sops · profiles · monthly_revenue · ledger · app_files</td>
+  <td class="desc-text">Staff onboarding pack — welcomes and trains new team members.</td>
+  <td class="wflow-text">Governance · onboarding · security · KPI review</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<footer>70 template rows across 11 categories · 2 duplicate rows flagged (Proof Brand CSA · Authority Brand CSA) · source: <code>templates</code> table · generated 2026-04-12</footer>
+
+</body>
+</html>
