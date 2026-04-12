@@ -6,6 +6,7 @@ import { Home, LogOut } from 'lucide-react'
 export default function Layout() {
   const { role, signOut } = useAuth()
   const location = useLocation()
+  const logoSrc = `${import.meta.env.BASE_URL}logo.svg`
 
   const routes = Object.values(ROUTE_CONFIG).filter(route => route.roles.includes((role || 'client') as any))
   const activeHome = location.pathname === '/' || location.pathname === '/dashboard'
@@ -15,7 +16,7 @@ export default function Layout() {
       <aside style={{ borderRight: '1px solid var(--border2)', padding: 20, position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
           <img
-            src="/logo.svg"
+            src={logoSrc}
             alt="Attract Acquisition"
             style={{ width: 48, height: 48, objectFit: 'contain' }}
           />

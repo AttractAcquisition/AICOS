@@ -5,6 +5,7 @@ import { DEFAULT_ROUTE_BY_ROLE } from '../lib/route-config'
 
 export default function Login() {
   const navigate = useNavigate() // <-- 2. Initialize navigation
+  const logoSrc = `${import.meta.env.BASE_URL}logo.svg`
 
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -41,7 +42,7 @@ export default function Login() {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
           <img
-            src="/logo.svg"
+            src={logoSrc}
             alt="Attract Acquisition"
             style={{ width: 52, height: 52, objectFit: 'contain' }}
           />
