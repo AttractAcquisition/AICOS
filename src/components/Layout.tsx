@@ -26,7 +26,7 @@ export default function Layout() {
           </div>
         </div>
 
-        {role !== 'distribution' && (
+        {role !== 'distribution' && role !== 'delivery' && (
           <div style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
             <Link
               to="/"

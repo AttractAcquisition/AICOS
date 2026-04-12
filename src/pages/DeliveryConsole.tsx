@@ -6,6 +6,7 @@ import { ConsoleShell, Panel } from '../components/ConsoleShell'
 import { Briefcase, Activity, MessageSquare, FileText, CheckCircle2, Users, ArrowRight, Layers3 } from 'lucide-react'
 import ExternalLinksGrid from '../components/ExternalLinksGrid'
 import { getExternalLinksForConsole } from '../lib/external-links'
+import { useAuth } from '../lib/auth'
 
 const MODULES = [
   {
@@ -53,19 +54,35 @@ const MODULES = [
 ]
 
 export default function DeliveryConsole() {
+  const { role, metadata_id } = useAuth()
   const [summary, setSummary] = useState({ total: 0, active: 0, portal: 0, complete: 0, docs: 0 })
   const db = supabase as any
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [role, metadata_id])
 
   async function load() {
+    const isAdmin = role === 'admin'
+    const managerId = metadata_id || null
+
     const [clientRes, sprintRes, portalRes, msgRes, docRes, progressRes] = await Promise.all([
-      db.from(AICOS.tables.clients).select('id, business_name, status, tier, monthly_retainer, upsell_ready_flag, account_manager').order('created_at', { ascending: false }).limit(8),
-      db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').order('created_at', { ascending: false }).limit(8),
-      db.from(AICOS.tables.portalTasks).select('id, status').limit(50),
-      db.from(AICOS.tables.portalMessages).select('id').limit(50),
-      db.from(AICOS.tables.portalDocuments).select('id').limit(50),
-      db.from(AICOS.tables.deliveryProgress).select('*').limit(40),
+      isAdmin
+        ? db.from(AICOS.tables.clients).select('id, business_name, status, tier, monthly_retainer, upsell_ready_flag, account_manager').order('created_at', { ascending: false }).limit(8)
+        : db.from(AICOS.tables.clients).select('id, business_name, status, tier, monthly_retainer, upsell_ready_flag, account_manager').eq('account_manager', managerId).order('created_at', { ascending: false }).limit(8),
+      isAdmin
+        ? db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').order('created_at', { ascending: false }).limit(8)
+        : db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').in('client_id', (await db.from(AICOS.tables.clients).select('id').eq('account_manager', managerId)).data?.map((c: any) => c.id) || []).order('created_at', { ascending: false }).limit(8),
+      isAdmin
+        ? db.from(AICOS.tables.portalTasks).select('id, status').limit(50)
+        : db.from(AICOS.tables.portalTasks).select('id, status').eq('manager_id', managerId).limit(50),
+      isAdmin
+        ? db.from(AICOS.tables.portalMessages).select('id').limit(50)
+        : db.from(AICOS.tables.portalMessages).select('id').eq('manager_id', managerId).limit(50),
+      isAdmin
+        ? db.from(AICOS.tables.portalDocuments).select('id').limit(50)
+        : db.from(AICOS.tables.portalDocuments).select('id').eq('manager_id', managerId).limit(50),
+      isAdmin
+        ? db.from(AICOS.tables.deliveryProgress).select('*').limit(40)
+        : db.from(AICOS.tables.deliveryProgress).select('*').eq('manager_id', managerId).limit(40),
     ])
 
     const clientRows = clientRes.data || []
