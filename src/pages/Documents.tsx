@@ -62,12 +62,12 @@ const FileRow = ({
   const handleLaunch = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (node.type === 'file') {
-      if (node.path) {
-        openLocalFile(node.path);
-        return;
-      }
       if (cloudUrl) {
         openCloudFile(cloudUrl);
+        return;
+      }
+      if (node.path) {
+        openLocalFile(node.path);
         return;
       }
     }
@@ -108,6 +108,27 @@ const FileRow = ({
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+          {node.type === 'file' && node.path && (
+            <button
+              onClick={() => openLocalFile(node.path!)}
+              title="Open local file"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--grey2)',
+                cursor: 'pointer',
+                fontSize: 10,
+                fontFamily: 'DM Mono',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              <ExternalLink size={12} /> Local
+            </button>
+          )}
           {node.type === 'file' && cloudUrl && (
             <button
               onClick={() => openCloudFile(cloudUrl)}
