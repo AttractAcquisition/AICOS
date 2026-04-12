@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Folder, File, ChevronRight, ChevronDown, Search, Plus, Edit2, Trash2, X, Save, Copy } from 'lucide-react';
+import { AA_CURRENT_REPOSITORY } from '../data/aa-current-repository';
 
 interface FileNode {
   id: string;
@@ -97,7 +98,10 @@ const FileRow = ({
 };
 
 export default function Documents() {
-  const [nodes, setNodes] = useState<FileNode[]>([]);
+  const [nodes, setNodes] = useState<FileNode[]>(() => {
+    const saved = localStorage.getItem('aa_repo_data');
+    return saved ? JSON.parse(saved) : (AA_CURRENT_REPOSITORY as unknown as FileNode[]);
+  });
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingNode, setEditingNode] = useState<Partial<FileNode> | null>(null);
   const [bulkText, setBulkText] = useState('');
@@ -105,7 +109,8 @@ export default function Documents() {
 
   useEffect(() => {
     const saved = localStorage.getItem('aa_repo_data');
-    if (saved) setNodes(JSON.parse(saved));
+    if (saved) return;
+    localStorage.setItem('aa_repo_data', JSON.stringify(AA_CURRENT_REPOSITORY));
   }, []);
 
   const saveToLocal = (newNodes: FileNode[]) => {
@@ -127,7 +132,7 @@ export default function Documents() {
     
     // Simple parser: Each line is a file.
     // Set VITE_DOCUMENTS_BASE_PATH in your .env to override the default local path.
-    const BASE_PATH = import.meta.env.VITE_DOCUMENTS_BASE_PATH || '/Users/alex/Desktop/Current/Attract Acquisition/Current/Documents/';
+    const BASE_PATH = import.meta.env.VITE_DOCUMENTS_BASE_PATH || '/Users/alex/Desktop/AA/Current/';
     const lines = bulkText.split('\n').filter(l => l.trim());
     
     const newItems: FileNode[] = lines.map((line, i) => ({
