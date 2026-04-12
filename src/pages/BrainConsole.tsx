@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
 import { Brain, FileText, Search, Layers3, Paperclip, BookOpen, FolderOpen, MessageSquare, ArrowRight } from 'lucide-react'
+import ExternalLinksGrid from '../components/ExternalLinksGrid'
+import { getExternalLinksForConsole } from '../lib/external-links'
 
 const MODULES = [
   {
@@ -105,6 +107,10 @@ export default function BrainConsole() {
             )
           })}
         </div>
+      </Panel>
+
+      <Panel title="External Software Links">
+        <ExternalLinksGrid links={getExternalLinksForConsole('knowledge')} />
       </Panel>
 
       <Panel title="Mapped Backend Objects">

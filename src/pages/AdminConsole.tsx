@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
 import { Shield, DollarSign, AlertTriangle, Activity, Users, ArrowRight, Settings, BarChart3, ReceiptText, FileText, ClipboardList, Target } from 'lucide-react'
+import ExternalLinksGrid from '../components/ExternalLinksGrid'
+import { getExternalLinksForConsole } from '../lib/external-links'
 
 const MODULES = [
   {
@@ -114,6 +116,10 @@ export default function AdminConsole() {
             )
           })}
         </div>
+      </Panel>
+
+      <Panel title="External Software Links">
+        <ExternalLinksGrid links={getExternalLinksForConsole('admin')} />
       </Panel>
 
       <Panel title="Mapped Backend Objects">

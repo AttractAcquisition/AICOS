@@ -81,7 +81,7 @@ export const CONSOLES = [
   },
   {
     key: 'brain',
-    title: 'Brain / Knowledge Console',
+    title: 'Knowledge Console',
     route: AICOS.routes.brain,
     description: 'Docs, chunks, queries, templates, SOPs, and assets.',
     tables: [AICOS.tables.knowledgeDocuments, AICOS.tables.knowledgeChunks, AICOS.tables.knowledgeQueries, AICOS.tables.templates, AICOS.tables.sops, AICOS.tables.assets],

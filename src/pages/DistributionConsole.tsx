@@ -5,6 +5,8 @@ import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
 import { Users, Target, CheckSquare, FileText, Search, ArrowRight, Bot, Library, ClipboardList, MessageSquare } from 'lucide-react'
+import ExternalLinksGrid from '../components/ExternalLinksGrid'
+import { getExternalLinksForConsole } from '../lib/external-links'
 
 const MODULES = [
   {
@@ -120,6 +122,10 @@ export default function DistributionConsole() {
             )
           })}
         </div>
+      </Panel>
+
+      <Panel title="External Software Links">
+        <ExternalLinksGrid links={getExternalLinksForConsole('distribution')} />
       </Panel>
 
       <Panel title="Operational Focus">
