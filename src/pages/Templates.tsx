@@ -6,6 +6,7 @@ import { Plus, Copy, Save, FileText, FileCode, X, Upload } from 'lucide-react'
 import { useToast } from '../lib/toast'
 import { useAuth } from '../lib/auth'
 import { getDefaultTemplateCategory, getVisibleTemplateCategories, roleToLibraryScope } from '../lib/library'
+import { openSavedFile, isHtmlDocument } from '../lib/file-viewer'
 
 // Updated interface to match Supabase's nullable return types
 interface Template { 
@@ -241,15 +242,6 @@ try {
   const allowedCategories = getVisibleTemplateCategories(scope)
   const visibleTemplates = templates.filter(t => t.category === catFilter)
 
-  const handleViewTemplate = (file: any) => {
-  // We build a local URL that points to our new page
-  // We pass the Supabase URL and the File Name as encoded parameters
-  const previewUrl = `/#/template-view?url=${encodeURIComponent(file.file_path)}&name=${encodeURIComponent(file.file_name)}`;
-  
-  // This opens our "Template Viewer" in a brand new tab
-  window.open(previewUrl, '_blank');
-};
-
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, height: 'calc(100vh - 120px)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -306,11 +298,11 @@ try {
 {associatedFiles.length > 0 && (
   <div style={{ paddingBottom: 15, borderBottom: '1px solid var(--border2)', marginBottom: 20 }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      {associatedFiles.map(file => {
-        const isHtml = file.file_type === 'text/html' || file.file_name.toLowerCase().endsWith('.html');
-        
+          {associatedFiles.map(file => {
+        const isHtml = isHtmlDocument(file.file_name, file.file_type);
+
         return (
-          <div key={file.id} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg2)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border2)', minWidth: '200px', maxWidth: '300px' }}>
+          <div key={file.id} onClick={() => openSavedFile(file.file_path, file.file_name, file.file_type)} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg2)', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border2)', minWidth: '200px', maxWidth: '300px', cursor: 'pointer' }}>
             {file.file_type === 'application/pdf' ? (
               <FileText size={14} style={{ color: 'var(--red)', marginRight: 10, flexShrink: 0 }} />
             ) : (
@@ -326,23 +318,9 @@ try {
               </span>
               
               <div style={{ display: 'flex', gap: 8, marginTop: 1 }}>
-                {isHtml ? (
-                  <button
-                    onClick={() => handleViewTemplate(file)}
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--teal)', fontSize: 10, cursor: 'pointer', fontFamily: 'DM Mono', textAlign: 'left', textDecoration: 'underline' }}
-                  >
-                    View Rendered
-                  </button>
-                ) : (
-                  <a
-                    href={file.file_path}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--grey)', fontSize: 10, fontFamily: 'DM Mono', textDecoration: 'underline' }}
-                  >
-                    Open File
-                  </a>
-                )}
+                <span style={{ color: isHtml ? 'var(--teal)' : 'var(--grey)', fontSize: 10, fontFamily: 'DM Mono', textDecoration: 'underline' }}>
+                  {isHtml ? 'Open in Viewer' : 'Open File'}
+                </span>
               </div>
             </div>
 

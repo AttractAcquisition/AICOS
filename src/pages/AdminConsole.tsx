@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import { Shield, DollarSign, AlertTriangle, Activity, Users, ArrowRight, Settings, BarChart3, ReceiptText, FileText, ClipboardList } from 'lucide-react'
+import { Shield, DollarSign, AlertTriangle, Activity, Users, ArrowRight, Settings, BarChart3, ReceiptText, FileText, ClipboardList, Target } from 'lucide-react'
 
 const MODULES = [
   {
@@ -35,6 +35,12 @@ const MODULES = [
     path: '/sops',
     description: 'Open the role-aware SOP library.',
     icon: ClipboardList,
+  },
+  {
+    title: 'SPOA Studio',
+    path: '/spoa',
+    description: 'Generate strategic plans of action for prospects.',
+    icon: Target,
   },
 ]
 

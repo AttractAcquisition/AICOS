@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useAuth } from '../lib/auth'
 import { getDefaultSopCategory, getVisibleSopCategories, roleToLibraryScope } from '../lib/library'
+import { openSavedFile, isHtmlDocument } from '../lib/file-viewer'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult, DroppableProvided, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 
@@ -328,14 +329,6 @@ try {
   const draftCount = sops.filter(s => s.status === 'draft').length
   const allowedCategories = getVisibleSopCategories(scope)
 
-const handleViewTemplate = (file: any) => {
-  // Use backticks ( ` ) instead of single quotes ( ' ) for interpolation
-  const previewUrl = `/#/template-view?url=${encodeURIComponent(file.file_path)}&name=${encodeURIComponent(file.file_name)}`;
-  
-  // This opens our "Template Viewer" in a brand new tab
-  window.open(previewUrl, '_blank');
-};
-
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, height: 'calc(100vh - 120px)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -486,11 +479,11 @@ const handleViewTemplate = (file: any) => {
 {associatedFiles.length > 0 && (
   <div style={{ marginBottom: 20, paddingBottom: 15, borderBottom: '1px solid var(--border2)' }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      {associatedFiles.map(file => {
-        const isHtml = file.file_type === 'text/html' || file.file_name.toLowerCase().endsWith('.html');
+{associatedFiles.map(file => {
+        const isHtml = isHtmlDocument(file.file_name, file.file_type);
         
         return (
-          <div key={file.id} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg2)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border2)', minWidth: '200px', maxWidth: '320px' }}>
+          <div key={file.id} onClick={() => openSavedFile(file.file_path, file.file_name, file.file_type)} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg2)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border2)', minWidth: '200px', maxWidth: '320px', cursor: 'pointer' }}>
             {file.file_type === 'application/pdf' ? (
               <FileText size={14} style={{ marginRight: 10, color: 'var(--red)', flexShrink: 0 }} />
             ) : isHtml ? (
@@ -508,23 +501,9 @@ const handleViewTemplate = (file: any) => {
               </span>
               
               <div style={{ display: 'flex', gap: 10, marginTop: 2 }}>
-                {isHtml ? (
-                  <button
-                    onClick={() => handleViewTemplate(file)}
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--teal)', fontSize: 10, cursor: 'pointer', fontFamily: 'DM Mono', textAlign: 'left', textDecoration: 'underline' }}
-                  >
-                    View Rendered
-                  </button>
-                ) : (
-                  <a
-                    href={file.file_path}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--grey)', fontSize: 10, fontFamily: 'DM Mono', textDecoration: 'underline' }}
-                  >
-                    Open File
-                  </a>
-                )}
+                <span style={{ color: isHtml ? 'var(--teal)' : 'var(--grey)', fontSize: 10, fontFamily: 'DM Mono', textDecoration: 'underline' }}>
+                  {isHtml ? 'Open in Viewer' : 'Open File'}
+                </span>
               </div>
             </div>
 

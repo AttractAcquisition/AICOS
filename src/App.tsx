@@ -27,6 +27,7 @@ import DeliveryPortal from './pages/DeliveryPortal'
 import ProofBrand from './pages/ProofBrand'
 import AuthorityBrand from './pages/AuthorityBrand'
 import Studio from './pages/Studio'
+import SPOA from './pages/SPOA'
 import Templates from './pages/Templates'
 import TemplateView from './pages/TemplateView'
 import Sops from './pages/Sops'
@@ -78,6 +79,7 @@ export default function App() {
               <Route path="admin/control" element={<RoleWrapper allowedRoles={['admin']}><AdminControl /></RoleWrapper>} />
               <Route path="admin/finance" element={<RoleWrapper allowedRoles={['admin']}><Finance /></RoleWrapper>} />
               <Route path="admin/income" element={<RoleWrapper allowedRoles={['admin']}><IncomeTracking /></RoleWrapper>} />
+              <Route path="spoa" element={<RoleWrapper allowedRoles={['admin']}><SPOA /></RoleWrapper>} />
               <Route path="templates" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><Templates /></RoleWrapper>} />
               <Route path="sops" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><Sops /></RoleWrapper>} />
               <Route path="distribution" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><DistributionConsole /></RoleWrapper>} />
@@ -88,7 +90,7 @@ export default function App() {
               <Route path="distribution/studio" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Studio /></RoleWrapper>} />
               <Route path="distribution/templates" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Templates /></RoleWrapper>} />
               <Route path="distribution/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Sops /></RoleWrapper>} />
-              <Route path="template-view" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><TemplateView /></RoleWrapper>} />
+              <Route path="template-view" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><TemplateView /></RoleWrapper>} />
               <Route path="delivery" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryConsole /></RoleWrapper>} />
               <Route path="delivery/clients" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Clients /></RoleWrapper>} />
               <Route path="delivery/sprints" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Sprints /></RoleWrapper>} />

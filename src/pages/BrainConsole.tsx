@@ -36,12 +36,6 @@ const MODULES = [
     description: 'Centralized access to external tools and ecosystem links.',
     icon: Paperclip,
   },
-  {
-    title: 'Template Viewer',
-    path: '/template-view',
-    description: 'Preview raw HTML templates in a separate viewer.',
-    icon: Paperclip,
-  },
 ]
 
 export default function BrainConsole() {
