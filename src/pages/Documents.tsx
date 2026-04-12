@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Folder, File, ChevronRight, ChevronDown, Search, Plus, Edit2, Trash2, X, Save, Copy, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Folder, File, ChevronRight, ChevronDown, Search, Plus, Edit2, Trash2, X, Save, Copy, ExternalLink, Cloud } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { AA_CURRENT_REPOSITORY } from '../data/aa-current-repository';
 
 interface FileNode {
@@ -14,36 +15,37 @@ const FileRow = ({
   node, 
   level, 
   onEdit, 
-  onDelete 
+  onDelete,
+  cloudUrl,
+  defaultOpen = false,
 }: { 
   node: FileNode; 
   level: number; 
   onEdit: (n: FileNode) => void; 
   onDelete: (id: string) => void;
+  cloudUrl?: string;
+  defaultOpen?: boolean;
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  const handleLaunch = (e: React.MouseEvent) => {
-  e.stopPropagation();
-  if (node.type === 'file' && node.path) {
-    let rawPath = node.path.trim();
+  useEffect(() => {
+    if (defaultOpen) setIsOpen(true);
+  }, [defaultOpen]);
 
-    // 1. Clean up if there's leftover http/localhost in the saved string
+  const openLocalFile = (filePath: string) => {
+    let rawPath = filePath.trim();
+
     if (rawPath.includes('localhost:8080')) {
       rawPath = rawPath.split('localhost:8080').pop() || '';
     }
 
-    // 2. Ensure it starts with ONE forward slash for the absolute path
     if (!rawPath.startsWith('/')) {
       rawPath = '/' + rawPath;
     }
 
-    // 3. Final Mac URL: file:///Users/alex/...
-    // Note: We use encodeURI to handle the spaces in "Attract Acquisition"
     const finalUrl = `file://${rawPath.replace(/^file:\/\//, '')}`;
     const encodedUrl = encodeURI(finalUrl);
 
-    console.log("Launching:", encodedUrl);
     const link = document.createElement('a');
     link.href = encodedUrl;
     link.target = '_blank';
@@ -51,10 +53,26 @@ const FileRow = ({
     document.body.appendChild(link);
     link.click();
     link.remove();
-  } else {
+  };
+
+  const openCloudFile = (url: string) => {
+    window.open(url, '_blank', 'noopener');
+  };
+
+  const handleLaunch = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (node.type === 'file') {
+      if (node.path) {
+        openLocalFile(node.path);
+        return;
+      }
+      if (cloudUrl) {
+        openCloudFile(cloudUrl);
+        return;
+      }
+    }
     setIsOpen(!isOpen);
-  }
-};
+  };
 
   return (
     <div style={{ marginLeft: level * 16 }}>
@@ -89,7 +107,28 @@ const FileRow = ({
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+          {node.type === 'file' && cloudUrl && (
+            <button
+              onClick={() => openCloudFile(cloudUrl)}
+              title="Open cloud copy"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--grey2)',
+                cursor: 'pointer',
+                fontSize: 10,
+                fontFamily: 'DM Mono',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              <Cloud size={12} /> Cloud
+            </button>
+          )}
           <Edit2 size={12} style={{ color: 'var(--grey2)', cursor: 'pointer' }} onClick={() => onEdit(node)} />
           <Trash2 size={12} style={{ color: '#ff4d4d', cursor: 'pointer' }} onClick={() => onDelete(node.id)} />
         </div>
@@ -111,6 +150,7 @@ export default function Documents() {
     const saved = localStorage.getItem('aa_repo_data');
     return saved ? JSON.parse(saved) : (AA_CURRENT_REPOSITORY as unknown as FileNode[]);
   });
+  const [cloudFiles, setCloudFiles] = useState<Record<string, string>>({});
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingNode, setEditingNode] = useState<Partial<FileNode> | null>(null);
   const [bulkText, setBulkText] = useState('');
@@ -120,6 +160,25 @@ export default function Documents() {
     const saved = localStorage.getItem('aa_repo_data');
     if (saved) return;
     localStorage.setItem('aa_repo_data', JSON.stringify(AA_CURRENT_REPOSITORY));
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data } = await supabase
+        .from('app_files')
+        .select('file_name, file_path')
+
+      if (!mounted || !data) return;
+      const next: Record<string, string> = {};
+      data.forEach((row: { file_name: string; file_path: string }) => {
+        if (row.file_name && row.file_path && !next[row.file_name]) {
+          next[row.file_name] = row.file_path;
+        }
+      })
+      setCloudFiles(next);
+    })()
+    return () => { mounted = false }
   }, []);
 
   const saveToLocal = (newNodes: FileNode[]) => {
@@ -168,6 +227,25 @@ export default function Documents() {
     setEditingNode(null);
   };
 
+  const filterTree = (list: FileNode[], term: string): FileNode[] => {
+    if (!term.trim()) return list;
+    const needle = term.toLowerCase();
+    return list.reduce<FileNode[]>((acc, node) => {
+      const nameMatch = node.name.toLowerCase().includes(needle);
+      if (node.type === 'folder' && node.children) {
+        const children = filterTree(node.children, term);
+        if (nameMatch || children.length) {
+          acc.push({ ...node, children });
+        }
+        return acc;
+      }
+      if (nameMatch) acc.push(node);
+      return acc;
+    }, []);
+  };
+
+  const filteredNodes = useMemo(() => filterTree(nodes, search), [nodes, search]);
+
   return (
     <div className="page-fade">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -193,15 +271,16 @@ export default function Documents() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {nodes
-            .filter(n => n.name.toLowerCase().includes(search.toLowerCase()))
+          {filteredNodes
             .map(node => (
               <FileRow 
                 key={node.id} 
                 node={node} 
                 level={0} 
                 onEdit={(n) => { setEditingNode(n); setIsPanelOpen(true); }} 
-                onDelete={deleteNode} 
+                onDelete={deleteNode}
+                cloudUrl={node.type === 'file' ? cloudFiles[node.name] : undefined}
+                defaultOpen={Boolean(search.trim())}
               />
             ))}
         </div>
