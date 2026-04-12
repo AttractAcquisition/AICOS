@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Client, Prospect } from '../lib/supabase'
 import { formatRand, formatDate } from '../lib/utils'
 import { Plus, X, AlertTriangle, TrendingUp, Search } from 'lucide-react'
 import { useToast } from '../lib/toast'
 import { useAuth } from '../lib/auth'
+import ClientTierWorkspace from '../components/ClientTierWorkspace'
+import { PROOF_BRAND_BONUSES, PROOF_BRAND_STEPS } from './ProofBrand'
+import { AUTHORITY_BRAND_BONUSES, AUTHORITY_BRAND_STEPS } from './AuthorityBrand'
 
 // Constants aligned with SQL CHECK constraints
 const TIERS = [
@@ -15,10 +18,11 @@ const TIERS = [
   { value: 'Consulting',       label: 'Consulting',       setup: 0,     retainer: 5000 },
 ]
 
-type SlideTab = 'overview' | 'sprints' | 'notes'
+type SlideTab = 'overview' | 'sprints' | 'proof-brand' | 'authority-brand' | 'notes'
 
 export default function Clients() {
   const { role, metadata_id }         = useAuth()
+  const navigate                      = useNavigate()
   const [clients, setClients]         = useState<Client[]>([])
   const [loading, setLoading]         = useState(true)
   const [selected, setSelected]       = useState<Client | null>(null)
@@ -38,6 +42,16 @@ export default function Clients() {
     // NOTE: Growth Operator dropdown requires a staff table.
     // profiles table is deprecated. deliveryUsers stays empty until staff table is provisioned.
   }, [metadata_id, role])
+
+  useEffect(() => {
+    const state = location.state as any
+    if (!state?.openClientId || clients.length === 0) return
+    const client = clients.find(c => c.id === state.openClientId)
+    if (!client) return
+    setSelected(client)
+    setSlideTab(state.openClientTab || 'overview')
+    navigate(location.pathname, { replace: true, state: {} })
+  }, [clients, location.pathname, location.state, navigate])
 
   async function load() {
     setLoading(true)
@@ -238,10 +252,16 @@ export default function Clients() {
               )}
 
               <div style={{ display: 'flex', borderBottom: '1px solid var(--border2)' }}>
-                {(['overview','sprints','notes'] as SlideTab[]).map(t => (
+                {([
+                  ['overview', 'Overview'],
+                  ['sprints', 'Sprint Data'],
+                  ['proof-brand', 'Proof Brand'],
+                  ['authority-brand', 'Authority Brand'],
+                  ['notes', 'Notes'],
+                ] as [SlideTab, string][]).map(([t, label]) => (
                   <button key={t} onClick={() => setSlideTab(t)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Mono', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '12px 16px', color: slideTab === t ? 'var(--teal)' : 'var(--grey)', borderBottom: slideTab === t ? '2px solid var(--teal)' : '2px solid transparent', marginBottom: -1 }}>
-                    {t}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -311,6 +331,26 @@ export default function Clients() {
               )}
 
               {slideTab === 'sprints' && <ClientSprints clientId={selected.id} accountManager={selected.account_manager} />}
+
+              {slideTab === 'proof-brand' && (
+                <ClientTierWorkspace
+                  tierName="Proof Brand"
+                  steps={PROOF_BRAND_STEPS}
+                  bonuses={PROOF_BRAND_BONUSES}
+                  selectedClient={selected}
+                  embedded
+                />
+              )}
+
+              {slideTab === 'authority-brand' && (
+                <ClientTierWorkspace
+                  tierName="Authority Brand"
+                  steps={AUTHORITY_BRAND_STEPS}
+                  bonuses={AUTHORITY_BRAND_BONUSES}
+                  selectedClient={selected}
+                  embedded
+                />
+              )}
 
               {slideTab === 'notes' && (
                 <div>

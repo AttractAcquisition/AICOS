@@ -392,18 +392,7 @@ export default function ProofSprint() {
 
   async function openSprintData() {
     if (!selectedClient) return
-    const { data } = await supabase
-      .from('proof_sprints')
-      .select('id')
-      .eq('client_name', selectedClient.business_name)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-    if (data?.id) {
-      navigate(`/delivery/sprints/${data.id}`)
-    } else {
-      toast('No active sprint found for this client — create one via Quick Add', 'error')
-    }
+    navigate('/delivery/clients', { state: { openClientId: selectedClient.id, openClientTab: 'sprints' } })
   }
 
   const allItems = deliverables.filter(d => d.position % 1000 !== 999)
@@ -499,7 +488,7 @@ export default function ProofSprint() {
                       textTransform: 'uppercase', letterSpacing: '0.06em', transition: '0.15s',
                     }}
                   >
-                    <ExternalLink size={11} /> Live Sprint Data
+                    <ExternalLink size={11} /> Detailed View
                   </button>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--teal)', fontFamily: 'DM Mono', lineHeight: 1 }}>

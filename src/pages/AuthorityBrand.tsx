@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { CheckCircle2, Circle, ChevronRight, ChevronDown, Loader2, Gift } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronRight, ChevronDown, Loader2, Gift, ExternalLink } from 'lucide-react'
 import { useToast } from '../lib/toast'
 
 const TIER_NAME = 'Authority Brand'
@@ -35,7 +36,7 @@ interface BonusDef {
 
 // ─── Authority Brand Step Definitions ─────────────────────────────────────────
 
-const AUTHORITY_BRAND_STEPS: StepDef[] = [
+export const AUTHORITY_BRAND_STEPS: StepDef[] = [
   {
     id: 1,
     title: 'Authority Onboarding Call + Brand Direction Brief',
@@ -209,7 +210,7 @@ const AUTHORITY_BRAND_STEPS: StepDef[] = [
 
 // ─── Bonus Definitions ─────────────────────────────────────────────────────────
 
-const AUTHORITY_BRAND_BONUSES: BonusDef[] = [
+export const AUTHORITY_BRAND_BONUSES: BonusDef[] = [
   {
     id: 'bonus-1',
     stepId: 11,
@@ -281,6 +282,7 @@ const AUTHORITY_BRAND_BONUSES: BonusDef[] = [
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function AuthorityBrand() {
+  const navigate = useNavigate()
   const { role, user } = useAuth()
   const { toast } = useToast()
   const [clients, setClients] = useState<any[]>([])
@@ -454,15 +456,28 @@ export default function AuthorityBrand() {
                     DELIVERY TRACKER · {TIER_NAME.toUpperCase()}
                   </p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--teal)', fontFamily: 'DM Mono', lineHeight: 1 }}>
-                    {overallPct}%
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--grey)', fontFamily: 'DM Mono', marginTop: 4 }}>
-                    {totalCompleted} / {totalItems} ITEMS
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--grey2)', fontFamily: 'DM Mono', marginTop: 2 }}>
-                    {completedSteps} / {AUTHORITY_BRAND_STEPS.length} STEPS
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                  <button
+                    onClick={() => navigate('/delivery/clients', { state: { openClientId: selectedClient.id, openClientTab: 'authority-brand' } })}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                      background: 'none', border: '1px solid var(--border2)', borderRadius: 6,
+                      cursor: 'pointer', fontFamily: 'DM Mono', fontSize: 10, color: 'var(--grey)',
+                      textTransform: 'uppercase', letterSpacing: '0.06em', transition: '0.15s',
+                    }}
+                  >
+                    <ExternalLink size={11} /> Detailed View
+                  </button>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--teal)', fontFamily: 'DM Mono', lineHeight: 1 }}>
+                      {overallPct}%
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--grey)', fontFamily: 'DM Mono', marginTop: 4 }}>
+                      {totalCompleted} / {totalItems} ITEMS
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--grey2)', fontFamily: 'DM Mono', marginTop: 2 }}>
+                      {completedSteps} / {AUTHORITY_BRAND_STEPS.length} STEPS
+                    </div>
                   </div>
                 </div>
               </div>
