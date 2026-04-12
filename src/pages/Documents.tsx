@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Folder, File, ChevronRight, ChevronDown, Search, Plus, Edit2, Trash2, X, Save, Copy } from 'lucide-react';
+import { Folder, File, ChevronRight, ChevronDown, Search, Plus, Edit2, Trash2, X, Save, Copy, ExternalLink } from 'lucide-react';
 import { AA_CURRENT_REPOSITORY } from '../data/aa-current-repository';
 
 interface FileNode {
@@ -44,7 +44,13 @@ const FileRow = ({
     const encodedUrl = encodeURI(finalUrl);
 
     console.log("Launching:", encodedUrl);
-    window.open(encodedUrl, '_blank');
+    const link = document.createElement('a');
+    link.href = encodedUrl;
+    link.target = '_blank';
+    link.rel = 'noreferrer noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   } else {
     setIsOpen(!isOpen);
   }
@@ -78,6 +84,9 @@ const FileRow = ({
           }}>
             {node.name}
           </span>
+          {node.type === 'file' && (
+            <ExternalLink size={12} color="var(--grey2)" />
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 12 }} onClick={(e) => e.stopPropagation()}>
