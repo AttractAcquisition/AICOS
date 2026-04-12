@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '../lib/toast';
+import { queryBrain, type BrainSource } from '../lib/brain';
 import { 
   Send, Bot, User, 
   Brain as BrainIcon, Loader2, 
@@ -12,6 +13,7 @@ import remarkGfm from 'remark-gfm';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  sources?: BrainSource[];
 }
 
 // --- Markdown Styling (Emerald/Dark Theme) ---
@@ -51,18 +53,8 @@ export default function Brain() {
     setLoading(true);
 
     try {
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-      if (!BACKEND_URL) throw new Error('VITE_BACKEND_URL is not configured.');
-      const response = await fetch(`${BACKEND_URL}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage }),
-      });
-
-      if (!response.ok) throw new Error('Intelligence relay failure.');
-
-      const data = await response.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      const data = await queryBrain(userMessage);
+      setMessages(prev => [...prev, { role: 'assistant', content: data.answer, sources: data.sources }]);
     } catch (err: any) {
       toast(err.message || "Connection Error", "error");
       setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ **System Alert:** Connection to the neural backend was interrupted.' }]);
@@ -143,6 +135,18 @@ export default function Brain() {
                 border: m.role === 'user' ? '1px solid var(--border2)' : 'none'
               }}>
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{m.content}</ReactMarkdown>
+                {m.role === 'assistant' && m.sources?.length ? (
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border2)', display: 'grid', gap: 8 }}>
+                    <div style={{ fontFamily: 'DM Mono', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--grey2)' }}>Sources</div>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {m.sources.slice(0, 5).map((source, index) => (
+                        <div key={`${source.document_id}-${index}`} style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--grey)' }}>
+                          {source.document_title} <span style={{ color: 'var(--grey2)' }}>(chunk {source.chunk_index + 1}, {Math.round(source.score * 100)}%)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           ))}

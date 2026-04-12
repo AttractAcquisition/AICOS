@@ -10,6 +10,7 @@ import {
   Sparkles,
   RefreshCw
 } from 'lucide-react'
+import { queryBrain } from '../lib/brain'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -74,28 +75,18 @@ const ChatPage = () => {
     if (!textToSend.trim() || loading) return
 
     const userMsg: Message = { role: 'user', content: textToSend }
-    setMessages(prev => [...prev, userMsg])
-    setInput('')
-    setLoading(true)
+      setMessages(prev => [...prev, userMsg])
+      setInput('')
+      setLoading(true)
 
-    try {
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
-      if (!BACKEND_URL) throw new Error('VITE_BACKEND_URL is not configured.')
-      const response = await fetch(`${BACKEND_URL}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg.content }),
-      })
-
-      if (!response.ok) throw new Error(`Server responded with ${response.status}`)
-
-      const data = await response.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
-    } catch (err) {
+      try {
+      const data = await queryBrain(userMsg.content)
+      setMessages(prev => [...prev, { role: 'assistant', content: data.answer }])
+      } catch (err) {
       console.error('ChatPage connection error:', err)
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: '⚠️ Connection Error: Ensure VITE_BACKEND_URL is active and reachable.' 
+        content: '⚠️ Connection Error: Ensure the brain edge function is deployed and reachable.' 
       }])
     } finally {
       setLoading(false)
