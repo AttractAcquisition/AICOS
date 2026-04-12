@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AICOS } from '../lib/aicos'
 import { Panel } from '../components/ConsoleShell'
-import { FileText, Upload, Download, Check, Send, Clock } from 'lucide-react'
+import { FileText, Upload, Download, Check, Send, Clock, ArrowRight, LogOut } from 'lucide-react'
 
 export default function ClientPortal() {
-  const { metadata_id, user } = useAuth()
+  const { metadata_id, user, signOut } = useAuth()
+  const navigate = useNavigate()
   const [client, setClient] = useState<any | null>(null)
   const [managerId, setManagerId] = useState<string | null>(null)
   const [tasks, setTasks] = useState<any[]>([])
@@ -127,6 +129,11 @@ export default function ClientPortal() {
     setNewMessage('')
   }
 
+  async function handleLogout() {
+    await signOut()
+    navigate('/login')
+  }
+
   if (loading) {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--teal)', fontFamily: 'DM Mono', fontSize: 11, letterSpacing: '0.12em' }}>
@@ -152,9 +159,64 @@ export default function ClientPortal() {
             </p>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '10px 14px', borderRadius: 8,
+            border: '1px solid var(--border2)', background: 'var(--bg2)',
+            color: 'var(--grey)', cursor: 'pointer',
+            fontFamily: 'DM Mono', fontSize: 10, textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+          }}
+        >
+          <LogOut size={12} /> Log out
+        </button>
       </header>
 
       <div style={{ display: 'grid', gap: 20 }}>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+          <Link
+            to="/portal/sprint-dashboard"
+            style={{
+              textDecoration: 'none', color: 'inherit',
+              border: '1px solid var(--border2)', borderRadius: 12, background: 'var(--bg2)',
+              padding: 16, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 150,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Sprint Dashboard</div>
+                <div style={{ fontSize: 12, color: 'var(--grey)', marginTop: 4, lineHeight: 1.5 }}>Jump to sprint progress and delivery reporting.</div>
+              </div>
+              <ArrowRight size={16} color="var(--teal)" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', fontFamily: 'DM Mono', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 'auto' }}>
+              Open dashboard <ArrowRight size={12} />
+            </div>
+          </Link>
+
+          <Link
+            to="/portal/live-pipeline-dashboard"
+            style={{
+              textDecoration: 'none', color: 'inherit',
+              border: '1px solid var(--border2)', borderRadius: 12, background: 'var(--bg2)',
+              padding: 16, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 150,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Live Pipeline Dashboard</div>
+                <div style={{ fontSize: 12, color: 'var(--grey)', marginTop: 4, lineHeight: 1.5 }}>Check live acquisition progress and funnel movement.</div>
+              </div>
+              <ArrowRight size={16} color="var(--teal)" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', fontFamily: 'DM Mono', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 'auto' }}>
+              Open dashboard <ArrowRight size={12} />
+            </div>
+          </Link>
+        </div>
+
         <Panel title={`Documents (${documents.length})`}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
             <label style={{

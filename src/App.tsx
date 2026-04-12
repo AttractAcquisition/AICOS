@@ -28,6 +28,8 @@ import ProofBrand from './pages/ProofBrand'
 import AuthorityBrand from './pages/AuthorityBrand'
 import Studio from './pages/Studio'
 import SPOA from './pages/SPOA'
+import SprintDashboard from './pages/SprintDashboard'
+import LivePipelineDashboard from './pages/LivePipelineDashboard'
 import Templates from './pages/Templates'
 import TemplateView from './pages/TemplateView'
 import Sops from './pages/Sops'
@@ -65,6 +67,8 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/portal" element={<RequireAuth><RoleWrapper allowedRoles={['client']}><ClientPortal /></RoleWrapper></RequireAuth>} />
+            <Route path="/portal/sprint-dashboard" element={<RequireAuth><RoleWrapper allowedRoles={['client']}><SprintDashboard /></RoleWrapper></RequireAuth>} />
+            <Route path="/portal/live-pipeline-dashboard" element={<RequireAuth><RoleWrapper allowedRoles={['client']}><LivePipelineDashboard /></RoleWrapper></RequireAuth>} />
             <Route
               path="/"
               element={
