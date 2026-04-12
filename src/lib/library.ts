@@ -16,14 +16,14 @@ export const SOP_CATEGORY_ORDER = [
 
 const TEMPLATE_VISIBILITY: Record<LibraryScope, string[]> = {
   admin: [...TEMPLATE_CATEGORY_ORDER],
-  distribution: ['outreach', 'mjr', 'general'],
+  distribution: ['outreach', 'mjr', 'spoa', 'general'],
   delivery: ['sprint', 'brand', 'authority', 'general'],
   client: ['sprint', 'brand', 'authority', 'general'],
 }
 
 const SOP_VISIBILITY: Record<LibraryScope, string[]> = {
   admin: [...SOP_CATEGORY_ORDER],
-  distribution: ['Outreach & Pipeline', 'Missed Jobs Report', 'General'],
+  distribution: ['Outreach & Pipeline', 'Missed Jobs Report', 'Strategic Plan of Action', 'General'],
   delivery: ['Proof Sprint', 'Proof Brand', 'Authority Brand', 'General'],
   client: ['Proof Sprint', 'Proof Brand', 'Authority Brand', 'General'],
 }

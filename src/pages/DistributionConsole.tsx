@@ -40,6 +40,12 @@ const MODULES = [
     icon: FileText,
   },
   {
+    title: 'SPOA Studio',
+    path: '/distribution/spoa',
+    description: 'Generate strategic plans of action for prospects.',
+    icon: Target,
+  },
+  {
     title: 'Templates',
     path: '/templates',
     description: 'Open the role-aware template library.',

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import { Shield, DollarSign, AlertTriangle, Activity, ArrowRight, Settings, BarChart3, ReceiptText, FileText, ClipboardList, Target } from 'lucide-react'
+import { Shield, DollarSign, AlertTriangle, Activity, ArrowRight, Settings, BarChart3, ReceiptText, FileText, ClipboardList } from 'lucide-react'
 import ExternalLinksGrid from '../components/ExternalLinksGrid'
 import { getExternalLinksForConsole } from '../lib/external-links'
 
@@ -13,12 +13,6 @@ const MODULES = [
     path: '/admin/control',
     description: 'Manage auth roles, client-manager mappings, and infrastructure assignments.',
     icon: Settings,
-  },
-  {
-    title: 'SPOA Studio',
-    path: '/spoa',
-    description: 'Generate strategic plans of action for prospects.',
-    icon: Target,
   },
   {
     title: 'Capital Flow',

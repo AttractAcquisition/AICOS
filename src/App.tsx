@@ -92,6 +92,7 @@ export default function App() {
               <Route path="distribution/outreach" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Outreach /></RoleWrapper>} />
               <Route path="distribution/crm" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><CRM /></RoleWrapper>} />
               <Route path="distribution/studio" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Studio /></RoleWrapper>} />
+              <Route path="distribution/spoa" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><SPOA /></RoleWrapper>} />
               <Route path="distribution/templates" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Templates /></RoleWrapper>} />
               <Route path="distribution/sops" element={<RoleWrapper allowedRoles={['admin', 'distribution']}><Sops /></RoleWrapper>} />
               <Route path="template-view" element={<RoleWrapper allowedRoles={['admin', 'distribution', 'delivery', 'client']}><TemplateView /></RoleWrapper>} />

@@ -6,6 +6,7 @@ export const AICOS = {
   routes: {
     admin: '/admin',
     distribution: '/distribution',
+    spoa: '/distribution/spoa',
     delivery: '/delivery',
     clientDashboard: '/portal',
     brain: '/brain',
