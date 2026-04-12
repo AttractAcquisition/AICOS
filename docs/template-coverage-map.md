@@ -1,0 +1,524 @@
+# AICOS Template Coverage Map
+
+Generated from the live `templates` table on 2026-04-12.
+
+## Scope
+- Template source: `templates`
+- Supporting tables: `prospects`, `clients`, `proof_sprints`, `sprint_daily_log`, `delivery_metrics`, `distro_metrics`, `portal_messages`, `portal_tasks`, `portal_documents`, `app_files`, `monthly_revenue`, `ledger`, `tracking_model`, `profiles`, `sops`
+
+## Outreach & Pipeline (11)
+- Owner: Distribution lead
+- Pages: Outreach, Prospects, Scraper
+- Tables: templates, prospects, distro_metrics, app_files
+- Workflow: lead sourcing, MJR delivery, follow-up, booking
+
+- Cold Intro — WhatsApp
+  - What it is: Hi {owner_name}, I came across {business_name} in {suburb} and noticed something worth sharing. We built a free report showing exactly ho...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Explainer Call Ask
+  - What it is: I’d love to jump on a quick 20-min call to show you the roadmap to capture that gap. No pitch, just a genuine look at what’s possible for...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Follow-up 48h
+  - What it is: Hi {owner_name}, just surfacing that report for {business_name}. I know the {vertical} work in {suburb} keeps you on-site, so I didn't wa...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Follow-up 96h
+  - What it is: Hi {owner_name}, just checking if you caught that report for {business_name}. Other {vertical} owners in Cape Town were surprised by how ...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Meta Leads WA Response
+  - What it is: Hey {owner_name}, here is the Missed Jobs Report you requested for {business_name}: [Link] The data for the {suburb} area is pretty eye-o...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- MJR Delivery Frame
+  - What it is: Hey {owner_name}, here is the report for {business_name}: [Link] The number that stood out for the {suburb} area was [Revenue Figure] in ...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Objection — Already Have Someone
+  - What it is: Completely understand {owner_name} — most businesses we work with had someone too. The report is still worth a look as it’s independent {...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Objection — No Budget
+  - What it is: Completely understand—timing is everything. The report is free, so no budget is needed to see the data for {business_name}. If you look a...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Objection — Not Interested
+  - What it is: No problem at all {owner_name}. If circumstances change and you want to see how many jobs {business_name} is missing monthly, just reply ...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Objection — Too Busy
+  - What it is: Makes total sense—{vertical} work in {suburb} is non-stop. That’s actually why we built this; the system runs in the background so you do...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+- Soft Close — MJR Acceptance
+  - What it is: No stress — quick context. It’s a short breakdown of {suburb} specifically: - how many people are searching for {vertical} each month - w...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: lead sourcing, MJR delivery, follow-up, booking
+
+## Missed Jobs Report (4)
+- Owner: Distribution lead
+- Pages: Outreach, Prospects, Scraper
+- Tables: templates, prospects, distro_metrics, app_files
+- Workflow: MJR creation, call prep, booking, objection handling
+
+- Discovery Call Booking Confirmation
+  - What it is: For distribution leads. This template is the discovery call booking confirmation used to lock the time and prep the client.
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: MJR creation, call prep, booking, objection handling
+- Discovery Call Prep Brief
+  - What it is: For distribution leads. This template is the discovery call prep brief used to organise the call context before the meeting.
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: MJR creation, call prep, booking, objection handling
+- Explainer Call Script
+  - What it is: 1. The Explainer Call Script (Discovery) Goal: Transition from the Missed Jobs Report to a 14-Day Proof Sprint. Duration: 20 Minutes. The...
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: MJR creation, call prep, booking, objection handling
+- Missed Jobs Report Template
+  - What it is: MJR Template
+  - Owner: Distribution lead
+  - Pages: Outreach, Prospects, Scraper
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: MJR creation, call prep, booking, objection handling
+
+## Strategic Plan of Action (2)
+- Owner: Distribution lead
+- Pages: SPOA, Outreach, Prospects
+- Tables: templates, prospects, distro_metrics, app_files
+- Workflow: SPOA build, delivery, follow-up, handoff
+
+- SPOA Delivery Message
+  - What it is: For distribution leads. This template is the SPOA delivery message used to hand the plan to the client cleanly.
+  - Owner: Distribution lead
+  - Pages: SPOA, Outreach, Prospects
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: SPOA build, delivery, follow-up, handoff
+- Strategic Plan of Action Template
+  - What it is: SOPA Template
+  - Owner: Distribution lead
+  - Pages: SPOA, Outreach, Prospects
+  - Tables: templates, prospects, distro_metrics, app_files
+  - Workflow: SPOA build, delivery, follow-up, handoff
+
+## Proof Sprint (11)
+- Owner: Delivery lead
+- Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+- Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+- Workflow: sprint onboarding, setup, launch, daily ops, closeout
+
+- Meta Ads Brief - Proof Sprint
+  - What it is: Here's the strategic logic driving the creative-to-audience assignments: The core principle is intent matching — cold audiences need proo...
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Closeout Checklist
+  - What it is: For delivery managers. This template is the proof sprint closeout checklist used to wrap the sprint cleanly.
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Daily Ops Log
+  - What it is: For delivery managers. This template is the proof sprint daily ops log used to track the live sprint day by day.
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Launch Checklist
+  - What it is: For delivery managers. This template is the proof sprint launch checklist used to confirm the sprint is ready to launch.
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Monitoring Sheet
+  - What it is: For delivery managers. This template is the proof sprint monitoring sheet used to track live results and optimisation actions.
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Offer
+  - What it is: Proof Sprint Offer
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Onboarding Brief
+  - What it is: For delivery managers. This template is the proof sprint onboarding brief used to confirm assets, access, and timing.
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Results Template
+  - What it is: Proof Sprint Results Template
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Setup Checklist
+  - What it is: For delivery managers. This template is the proof sprint setup checklist used to verify every launch item before go-live.
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Proof Sprint Terms and Conditions
+  - What it is: Proof Sprint Terms and Conditions
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+- Results Meeting Script
+  - What it is: 2. The Results Meeting Script (Post-Sprint) Goal: Convert the successful Sprint into a long-term "Authority Brand" Retainer. Duration: 30...
+  - Owner: Delivery lead
+  - Pages: Clients, SprintDetail, SprintDashboard, LivePipelineDashboard
+  - Tables: templates, clients, proof_sprints, sprint_daily_log, delivery_metrics
+  - Workflow: sprint onboarding, setup, launch, daily ops, closeout
+
+## Proof Brand (10)
+- Owner: Delivery lead
+- Pages: Clients, ProofBrand, ClientPortal
+- Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+- Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+
+- Authority Brand Upsell Pitch
+  - What it is: Hi {owner_name} — we are 90 days in and the numbers speak for themselves. I want to show you what the Authority Brand tier adds on top of...
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Case Study Capture Template
+  - What it is: For delivery leads. This template is the case study capture template used to turn results into reusable proof.
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Proof Brand Client Service Agreement (duplicate row 1/2)
+  - What it is: Proof Brand Client Service Agreement
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Proof Brand Client Service Agreement (duplicate row 2/2)
+  - What it is: Proof Brand Client Service Agreement
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Proof Brand Monthly Report
+  - What it is: For delivery managers. This template is the proof brand monthly report used to summarise monthly performance.
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Proof Brand Offer
+  - What it is: Proof Brand Offer
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Proof Brand Onboarding Brief
+  - What it is: For delivery managers. This template is the proof brand onboarding brief used to collect assets, access, and kickoff details.
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Proof Brand Pack QA Checklist
+  - What it is: For delivery managers. This template is the proof brand pack QA checklist used to review the delivery pack before publish.
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Proof Brand Setup Checklist
+  - What it is: For delivery managers. This template is the proof brand setup checklist used to verify the build before launch.
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+- Testimonial Capture Template
+  - What it is: For delivery leads. This template is the testimonial capture template used to collect proof from successful work.
+  - Owner: Delivery lead
+  - Pages: Clients, ProofBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: proof brand onboarding, setup, QA, reporting, proof capture
+
+## Authority Brand (8)
+- Owner: Delivery lead
+- Pages: Clients, AuthorityBrand, ClientPortal
+- Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+- Workflow: authority brand onboarding, setup, review, retention
+
+- Authority Brand Client Service Agreement (duplicate row 1/2)
+  - What it is: Authority Brand Client Service Agreement
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+- Authority Brand Client Service Agreement (duplicate row 2/2)
+  - What it is: Authority Brand Client Service Agreement
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+- Authority Brand Content Calendar
+  - What it is: For content leads. This template is the authority brand content calendar used to plan the human-led content cycle.
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+- Authority Brand Monthly Review
+  - What it is: For delivery leads. This template is the authority brand monthly review used to assess performance and next actions.
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+- Authority Brand Offer
+  - What it is: Authority Brand Offer
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+- Authority Brand Onboarding Brief
+  - What it is: For delivery managers. This template is the authority brand onboarding brief used to collect the authority inputs and direction.
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+- Authority Brand Review Deck
+  - What it is: For delivery leads. This template is the authority brand review deck used to present results and expansion options.
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+- Authority Brand Setup Checklist
+  - What it is: For delivery managers. This template is the authority brand setup checklist used to verify the Tier 2 build before launch.
+  - Owner: Delivery lead
+  - Pages: Clients, AuthorityBrand, ClientPortal
+  - Tables: templates, clients, proof_sprints, portal_messages, portal_tasks, portal_documents, delivery_metrics
+  - Workflow: authority brand onboarding, setup, review, retention
+
+## Delivery Ops (2)
+- Owner: Delivery / client success
+- Pages: ClientPortal, DeliveryPortal, Documents
+- Tables: templates, portal_messages, portal_tasks, portal_documents, app_files, clients
+- Workflow: client workspace, reporting, handoffs, escalations
+
+- Client Portal Welcome Guide
+  - What it is: For delivery managers. This template is the client portal welcome guide used to explain how clients should use the workspace.
+  - Owner: Delivery / client success
+  - Pages: ClientPortal, DeliveryPortal, Documents
+  - Tables: templates, portal_messages, portal_tasks, portal_documents, app_files, clients
+  - Workflow: client workspace, reporting, handoffs, escalations
+- Weekly Client Report Template
+  - What it is: For delivery leads. This template is the weekly client report used to keep clients informed with live data.
+  - Owner: Delivery / client success
+  - Pages: ClientPortal, DeliveryPortal, Documents
+  - Tables: templates, portal_messages, portal_tasks, portal_documents, app_files, clients
+  - Workflow: client workspace, reporting, handoffs, escalations
+
+## Content Production (6)
+- Owner: Content lead
+- Pages: Content, Documents, Brain
+- Tables: templates, app_files, portal_documents, aa_documents, aa_chunks
+- Workflow: content planning, scripting, QA, approval, publish
+
+- Content Approval Form
+  - What it is: For content leads. This template is the content approval form used to record signoff before publishing.
+  - Owner: Content lead
+  - Pages: Content, Documents, Brain
+  - Tables: templates, app_files, portal_documents, aa_documents, aa_chunks
+  - Workflow: content planning, scripting, QA, approval, publish
+- Content Brief Template
+  - What it is: For content leads. This template is the content brief used to define the angle, format, and objective.
+  - Owner: Content lead
+  - Pages: Content, Documents, Brain
+  - Tables: templates, app_files, portal_documents, aa_documents, aa_chunks
+  - Workflow: content planning, scripting, QA, approval, publish
+- Content Calendar Template
+  - What it is: For content leads. This template is the content calendar used to plan the publishing schedule.
+  - Owner: Content lead
+  - Pages: Content, Documents, Brain
+  - Tables: templates, app_files, portal_documents, aa_documents, aa_chunks
+  - Workflow: content planning, scripting, QA, approval, publish
+- Content Publish Log
+  - What it is: For content leads. This template is the content publish log used to record what went live and when.
+  - Owner: Content lead
+  - Pages: Content, Documents, Brain
+  - Tables: templates, app_files, portal_documents, aa_documents, aa_chunks
+  - Workflow: content planning, scripting, QA, approval, publish
+- Content QA Checklist
+  - What it is: For content leads. This template is the content QA checklist used to check copy, visuals, and links before publish.
+  - Owner: Content lead
+  - Pages: Content, Documents, Brain
+  - Tables: templates, app_files, portal_documents, aa_documents, aa_chunks
+  - Workflow: content planning, scripting, QA, approval, publish
+- Content Script Template
+  - What it is: For content leads. This template is the content script used to draft the actual post or reel.
+  - Owner: Content lead
+  - Pages: Content, Documents, Brain
+  - Tables: templates, app_files, portal_documents, aa_documents, aa_chunks
+  - Workflow: content planning, scripting, QA, approval, publish
+
+## Support & Escalations (1)
+- Owner: Delivery ops
+- Pages: ClientPortal, DeliveryPortal
+- Tables: templates, portal_messages, portal_tasks, portal_documents, clients
+- Workflow: issue tracking, blocker resolution, escalation handling
+
+- Delivery Portal Escalation Log
+  - What it is: For support leads. This template is the delivery portal escalation log used to track blockers and resolutions.
+  - Owner: Delivery ops
+  - Pages: ClientPortal, DeliveryPortal
+  - Tables: templates, portal_messages, portal_tasks, portal_documents, clients
+  - Workflow: issue tracking, blocker resolution, escalation handling
+
+## Finance (4)
+- Owner: Finance / ops lead
+- Pages: Finance, IncomeTracking, AdminControl
+- Tables: templates, monthly_revenue, ledger, tracking_model
+- Workflow: billing, reminders, collections, finance review
+
+- Billing Invoice Template
+  - What it is: For finance leads. This template is the billing invoice used to request payment for fees or retainers.
+  - Owner: Finance / ops lead
+  - Pages: Finance, IncomeTracking, AdminControl
+  - Tables: templates, monthly_revenue, ledger, tracking_model
+  - Workflow: billing, reminders, collections, finance review
+- Collections Follow-up Template
+  - What it is: For finance leads. This template is the collections follow-up used to chase overdue balances professionally.
+  - Owner: Finance / ops lead
+  - Pages: Finance, IncomeTracking, AdminControl
+  - Tables: templates, monthly_revenue, ledger, tracking_model
+  - Workflow: billing, reminders, collections, finance review
+- Finance Dashboard Summary
+  - What it is: For finance leads. This template is the finance dashboard summary used to report income, costs, and cash position.
+  - Owner: Finance / ops lead
+  - Pages: Finance, IncomeTracking, AdminControl
+  - Tables: templates, monthly_revenue, ledger, tracking_model
+  - Workflow: billing, reminders, collections, finance review
+- Payment Reminder Template
+  - What it is: For finance leads. This template is the payment reminder used to follow up on due invoices.
+  - Owner: Finance / ops lead
+  - Pages: Finance, IncomeTracking, AdminControl
+  - Tables: templates, monthly_revenue, ledger, tracking_model
+  - Workflow: billing, reminders, collections, finance review
+
+## General (5)
+- Owner: Delivery / ops
+- Pages: ClientPortal, Documents, AdminControl
+- Tables: templates, portal_documents, app_files, profiles
+- Workflow: cross-functional support, collateral, offboarding
+
+- A5 Detailing Flyer - Front
+  - What it is: A5 Detailing Flyer - Front
+  - Owner: Delivery / ops
+  - Pages: ClientPortal, Documents, AdminControl
+  - Tables: templates, portal_documents, app_files, profiles
+  - Workflow: cross-functional support, collateral, offboarding
+- A5 General Flyer - Front
+  - What it is: A5 General Flyer - Front
+  - Owner: Delivery / ops
+  - Pages: ClientPortal, Documents, AdminControl
+  - Tables: templates, portal_documents, app_files, profiles
+  - Workflow: cross-functional support, collateral, offboarding
+- A5 Trades Flyer - Front
+  - What it is: A5 Trades Flyer - Front
+  - Owner: Delivery / ops
+  - Pages: ClientPortal, Documents, AdminControl
+  - Tables: templates, portal_documents, app_files, profiles
+  - Workflow: cross-functional support, collateral, offboarding
+- Alex Anderson Business Card
+  - What it is: Back & Front
+  - Owner: Delivery / ops
+  - Pages: ClientPortal, Documents, AdminControl
+  - Tables: templates, portal_documents, app_files, profiles
+  - Workflow: cross-functional support, collateral, offboarding
+- Renewal / Offboarding Checklist
+  - What it is: For delivery managers. This template is the renewal and offboarding checklist used to close out or renew accounts cleanly.
+  - Owner: Delivery / ops
+  - Pages: ClientPortal, Documents, AdminControl
+  - Tables: templates, portal_documents, app_files, profiles
+  - Workflow: cross-functional support, collateral, offboarding
+
+## Admin (8)
+- Owner: Admin / ops lead
+- Pages: AdminControl, Dashboard, Brain, Templates, Sops
+- Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+- Workflow: governance, onboarding, security, KPI review
+
+- Access Request / Role Change Form
+  - What it is: For ops leads. This template is the access request and role change form used to control permissions cleanly.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+- Backup / Security Checklist
+  - What it is: For ops leads. This template is the backup and security checklist used to verify backups and access hygiene.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+- Daily Command Center Review Sheet
+  - What it is: For principals. This template is the daily command center review sheet used to set priorities and track blockers.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+- Knowledge Base Change Request
+  - What it is: For ops leads. This template is the knowledge base change request used to update SOPs and reference docs.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+- KPI Review Sheet
+  - What it is: For ops leads. This template is the KPI review sheet used to track weekly and monthly performance.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+- Role Registry Change Form
+  - What it is: For admin leads. This template is the role registry change form used to log access changes.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+- SOP Publishing Checklist
+  - What it is: For ops leads. This template is the SOP publishing checklist used to confirm a draft is ready to go live.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+- Staff Onboarding Pack
+  - What it is: For ops leads. This template is the staff onboarding pack used to welcome and train new team members.
+  - Owner: Admin / ops lead
+  - Pages: AdminControl, Dashboard, Brain, Templates, Sops
+  - Tables: templates, sops, profiles, monthly_revenue, ledger, app_files
+  - Workflow: governance, onboarding, security, KPI review
+
