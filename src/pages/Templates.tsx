@@ -5,7 +5,7 @@ import { formatDate } from '../lib/utils'
 import { Plus, Copy, Save, FileText, FileCode, X, Upload } from 'lucide-react'
 import { useToast } from '../lib/toast'
 import { useAuth } from '../lib/auth'
-import { getDefaultTemplateCategory, getVisibleTemplateCategories, roleToLibraryScope } from '../lib/library'
+import { TEMPLATE_CATEGORY_ORDER, getDefaultTemplateCategory, getVisibleTemplateCategories, roleToLibraryScope } from '../lib/library'
 import { openSavedFile, isHtmlDocument } from '../lib/file-viewer'
 
 // Updated interface to match Supabase's nullable return types
@@ -21,21 +21,39 @@ interface Template {
 }
 
 const CATEGORIES = [
+  { key: 'all', label: 'All Templates' },
   { key: 'outreach',     label: 'Outreach & Pipeline' },
-  { key: 'mjr',     label: 'Missed Jobs Report' },
-  { key: 'spoa',     label: 'Strategic Plan of Action' },
-  { key: 'sprint',     label: 'Proof Sprint' },
-  { key: 'brand',     label: 'Proof Brand' },
-  { key: 'authority',     label: 'Authority Brand' },
-  { key: 'general',     label: 'General' },
-  { key: 'admin',     label: 'Admin' },
+  { key: 'mjr', label: 'Missed Jobs Report' },
+  { key: 'spoa', label: 'Strategic Plan of Action' },
+  { key: 'sprint', label: 'Proof Sprint' },
+  { key: 'brand', label: 'Proof Brand' },
+  { key: 'authority', label: 'Authority Brand' },
+  { key: 'delivery', label: 'Delivery Ops' },
+  { key: 'content', label: 'Content Production' },
+  { key: 'support', label: 'Support & Escalations' },
+  { key: 'finance', label: 'Finance' },
+  { key: 'general', label: 'General' },
+  { key: 'admin', label: 'Admin' },
 ]
+
+const categoryOrder = [...TEMPLATE_CATEGORY_ORDER]
+
+function sortTemplates(rows: Template[]) {
+  return [...rows].sort((a, b) => {
+    const ai = a.category ? categoryOrder.indexOf(a.category as any) : -1
+    const bi = b.category ? categoryOrder.indexOf(b.category as any) : -1
+    const aIndex = ai === -1 ? categoryOrder.length : ai
+    const bIndex = bi === -1 ? categoryOrder.length : bi
+    if (aIndex !== bIndex) return aIndex - bIndex
+    return (a.title || '').localeCompare(b.title || '')
+  })
+}
 
 export default function Templates() {
   const { user, role } = useAuth()
   const scope = roleToLibraryScope(role)
   const [templates, setTemplates]   = useState<Template[]>([])
-  const [catFilter, setCatFilter]   = useState('outreach')
+  const [catFilter, setCatFilter]   = useState('all')
   const [selected, setSelected]     = useState<Template | null>(null)
   const [editForm, setEditForm]     = useState({ title: '', category: 'outreach', content: '' })
   const [isNew, setIsNew]           = useState(false)
@@ -47,7 +65,7 @@ export default function Templates() {
 
   useEffect(() => {
     const defaultCategory = getDefaultTemplateCategory(scope)
-    setCatFilter(prev => getVisibleTemplateCategories(scope).includes(prev) ? prev : defaultCategory)
+    setCatFilter(prev => prev === 'all' || getVisibleTemplateCategories(scope).includes(prev) ? prev : defaultCategory)
   }, [scope])
 
   useEffect(() => { load() }, [catFilter, scope])
@@ -96,7 +114,7 @@ async function loadFiles(templateId: string) {
 
   function newTemplate() {
     setSelected(null)
-    setEditForm({ title: '', category: catFilter || getDefaultTemplateCategory(scope), content: '' })
+    setEditForm({ title: '', category: catFilter === 'all' ? getDefaultTemplateCategory(scope) : (catFilter || getDefaultTemplateCategory(scope)), content: '' })
     setIsNew(true)
     setAssociatedFiles([])
   }
@@ -240,18 +258,21 @@ try {
   const charColor = charCount > 1024 ? 'var(--red)' : charCount > 900 ? 'var(--amber)' : 'var(--grey)'
   const vars = [...new Set(editForm.content?.match(/\{[^}]+\}/g) || [])]
   const allowedCategories = getVisibleTemplateCategories(scope)
-  const visibleTemplates = templates.filter(t => t.category === catFilter)
+  const visibleTemplates = catFilter === 'all'
+    ? sortTemplates(templates)
+    : sortTemplates(templates.filter(t => t.category === catFilter))
+  const visibleCategoryOptions = CATEGORIES.filter(c => c.key === 'all' || allowedCategories.includes(c.key))
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, height: 'calc(100vh - 120px)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {CATEGORIES.filter(c => allowedCategories.includes(c.key)).map(c => (
+          {visibleCategoryOptions.map(c => (
             <button key={c.key} onClick={() => setCatFilter(c.key)}
               style={{ background: catFilter === c.key ? 'var(--teal-faint)' : 'transparent', border: `1px solid ${catFilter === c.key ? 'var(--teal-border)' : 'transparent'}`, borderRadius: 4, padding: '9px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: 'Barlow', fontSize: 13, color: catFilter === c.key ? 'var(--teal)' : 'var(--grey)', transition: 'all 0.15s' }}>
               {c.label}
               <span style={{ float: 'right', fontFamily: 'DM Mono', fontSize: 11, color: 'var(--grey2)' }}>
-                {templates.filter(t => t.category === c.key).length || ''}
+                {c.key === 'all' ? templates.length : (templates.filter(t => t.category === c.key).length || '')}
               </span>
             </button>
           ))}
@@ -289,9 +310,9 @@ try {
               <div style={{ width: 160 }}>
                 <div className="label">Category</div>
                 <select className="input" value={editForm.category} onChange={e => setEditForm(prev => ({ ...prev, category: e.target.value }))}>
-                  {CATEGORIES.filter(c => allowedCategories.includes(c.key)).map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-                </select>
-              </div>
+                {CATEGORIES.filter(c => c.key !== 'all' && allowedCategories.includes(c.key)).map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+              </select>
+            </div>
             </div>
 
 {/* ASSOCIATED FILES BAR */}

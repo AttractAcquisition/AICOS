@@ -2,7 +2,7 @@ import type { Role } from './auth'
 
 export type LibraryScope = 'admin' | 'distribution' | 'delivery' | 'client'
 
-export const TEMPLATE_CATEGORY_ORDER = ['outreach', 'mjr', 'spoa', 'sprint', 'brand', 'authority', 'general', 'admin'] as const
+export const TEMPLATE_CATEGORY_ORDER = ['outreach', 'mjr', 'spoa', 'sprint', 'brand', 'authority', 'delivery', 'content', 'support', 'finance', 'general', 'admin'] as const
 export const SOP_CATEGORY_ORDER = [
   'Outreach & Pipeline',
   'Missed Jobs Report',
@@ -17,7 +17,7 @@ export const SOP_CATEGORY_ORDER = [
 const TEMPLATE_VISIBILITY: Record<LibraryScope, string[]> = {
   admin: [...TEMPLATE_CATEGORY_ORDER],
   distribution: ['outreach', 'mjr', 'spoa', 'general'],
-  delivery: ['sprint', 'brand', 'authority', 'general'],
+  delivery: ['sprint', 'brand', 'authority', 'delivery', 'content', 'support', 'general'],
   client: ['sprint', 'brand', 'authority', 'general'],
 }
 
