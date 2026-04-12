@@ -39,24 +39,12 @@ const MODULES = [
   },
   {
     title: 'Templates',
-    path: '/distribution/templates',
-    description: 'Maintain outreach templates and attached files.',
-    icon: Library,
-  },
-  {
-    title: 'SOPs',
-    path: '/distribution/sops',
-    description: 'Keep the acquisition playbook, rules, and process docs in order.',
-    icon: CheckSquare,
-  },
-  {
-    title: 'Templates',
     path: '/templates',
     description: 'Open the role-aware template library.',
     icon: Library,
   },
   {
-    title: 'SOP Library',
+    title: 'SOPs',
     path: '/sops',
     description: 'Open the role-aware SOP library.',
     icon: CheckSquare,
@@ -65,17 +53,14 @@ const MODULES = [
 
 export default function DistributionConsole() {
   const { metadata_id } = useAuth()
-  const [prospects, setProspects] = useState<any[]>([])
   const [stats, setStats] = useState({ total: 0, active: 0, won: 0, progress: 0 })
-  const [metrics, setMetrics] = useState<any[]>([])
   const db = supabase as any
 
   useEffect(() => { load() }, [metadata_id])
 
   async function load() {
-    const [{ data: prospectRows }, { data: metricRows }, { data: progressRows }] = await Promise.all([
+    const [{ data: prospectRows }, { data: progressRows }] = await Promise.all([
       db.from(AICOS.tables.prospects).select('id, business_name, status, pipeline_stage, icp_tier, vertical, updated_at').order('updated_at', { ascending: false }).limit(8),
-      db.from(AICOS.tables.distributionMetrics).select('*').order('date_key', { ascending: false }).limit(7),
       db.from(AICOS.tables.distributionProgress).select('*').limit(40),
     ])
 
@@ -85,9 +70,7 @@ export default function DistributionConsole() {
     const completed = (progressRows || []).filter((p: any) => p.is_completed).length
     const totalProgress = progressRows?.length || 0
 
-    setProspects(allProspects)
     setStats({ total: allProspects.length, active, won, progress: totalProgress ? Math.round((completed / totalProgress) * 100) : 0 })
-    setMetrics(metricRows || [])
   }
 
   return (
@@ -149,24 +132,6 @@ export default function DistributionConsole() {
         </div>
       </Panel>
 
-      <Panel title="Latest Prospects">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {prospects.map(p => (
-            <Row key={p.id} left={p.business_name} right={`${p.pipeline_stage || 'First Touch'} · ${p.icp_tier || 'UNSCORED'}`} />
-          ))}
-          {prospects.length === 0 && <Empty label="No prospects yet" />}
-        </div>
-      </Panel>
-
-      <Panel title="Recent Distribution Metrics">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {metrics.map(m => (
-            <Row key={m.id} left={m.date_key} right={`MJRs: ${m.mjrs_sent || 0} · Calls: ${m.calls_booked || 0} · Outreach: ${m.outreach_sent || 0}`} />
-          ))}
-          {metrics.length === 0 && <Empty label="No metrics yet" />}
-        </div>
-      </Panel>
-
     </ConsoleShell>
   )
 }
@@ -181,17 +146,4 @@ function MiniMetric({ label, value }: { label: string; value: string | number })
       </div>
     </div>
   )
-}
-
-function Row({ left, right }: { left: string; right: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '14px 16px', background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 10 }}>
-      <strong style={{ fontSize: 14 }}>{left}</strong>
-      <span style={{ fontSize: 12, color: 'var(--grey)' }}>{right}</span>
-    </div>
-  )
-}
-
-function Empty({ label }: { label: string }) {
-  return <div style={{ padding: 18, color: 'var(--grey)', fontSize: 13, border: '1px dashed var(--border2)', borderRadius: 10 }}>{label}</div>
 }

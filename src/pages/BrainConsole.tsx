@@ -13,12 +13,6 @@ const MODULES = [
     icon: MessageSquare,
   },
   {
-    title: 'Prompt Assistant',
-    path: '/brain/prompts',
-    description: 'Use quick prompts for SOPs, funnels, objections, and workflows.',
-    icon: Layers3,
-  },
-  {
     title: 'Knowledge Repository',
     path: '/brain/repository',
     description: 'Browse the local asset tree and raw reference files.',
@@ -72,8 +66,8 @@ export default function BrainConsole() {
 
   return (
     <ConsoleShell
-      badge="AIOS / Brain"
-      title="Brain / Knowledge Console"
+      badge="AIOS / Knowledge"
+      title="Knowledge Console"
       subtitle="Canonical documents, vector chunks, retrieval logs, SOPs, templates, and file assets."
       stats={[
         { label: 'Docs', value: docs.length, icon: FileText },
@@ -128,32 +122,6 @@ export default function BrainConsole() {
         </div>
       </Panel>
 
-      <Panel title="Knowledge Documents">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {docs.map(d => (
-            <Row key={d.id} left={d.title} right={`${d.source_type || 'doc'} · ${d.status || 'draft'}`} />
-          ))}
-          {docs.length === 0 && <Empty label="No knowledge documents yet" />}
-        </div>
-      </Panel>
-
-      <Panel title="Recent Queries">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {queries.map(q => (
-            <Row key={q.id} left={q.query_text} right={`${q.model_name || 'model'} · ${q.created_at || ''}`} />
-          ))}
-          {queries.length === 0 && <Empty label="No queries yet" />}
-        </div>
-      </Panel>
-
-      <Panel title="Recent Chunks">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {chunks.map(c => (
-            <Row key={c.id} left={`Document ${c.document_id}`} right={`Chunk ${c.chunk_index}`} />
-          ))}
-          {chunks.length === 0 && <Empty label="No chunks yet" />}
-        </div>
-      </Panel>
     </ConsoleShell>
   )
 }
@@ -168,17 +136,4 @@ function MiniMetric({ label, value }: { label: string; value: string | number })
       </div>
     </div>
   )
-}
-
-function Row({ left, right }: { left: string; right: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '14px 16px', background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 10 }}>
-      <strong style={{ fontSize: 14 }}>{left}</strong>
-      <span style={{ fontSize: 12, color: 'var(--grey)' }}>{right}</span>
-    </div>
-  )
-}
-
-function Empty({ label }: { label: string }) {
-  return <div style={{ padding: 18, color: 'var(--grey)', fontSize: 13, border: '1px dashed var(--border2)', borderRadius: 10 }}>{label}</div>
 }

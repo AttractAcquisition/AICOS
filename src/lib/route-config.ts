@@ -34,7 +34,7 @@ export const ROUTE_CONFIG: Record<RouteKey, RouteMeta> = {
   },
   brain: {
     path: '/brain',
-    label: 'Brain / Knowledge Console',
+    label: 'Knowledge Console',
     section: 'Knowledge',
     icon: Brain,
     roles: ['admin'],

@@ -51,19 +51,15 @@ const MODULES = [
 ]
 
 export default function DeliveryConsole() {
-  const [clients, setClients] = useState<any[]>([])
-  const [sprints, setSprints] = useState<any[]>([])
-  const [metrics, setMetrics] = useState<any[]>([])
   const [summary, setSummary] = useState({ total: 0, active: 0, portal: 0, complete: 0, docs: 0 })
   const db = supabase as any
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    const [clientRes, sprintRes, metricRes, portalRes, msgRes, docRes, progressRes] = await Promise.all([
+    const [clientRes, sprintRes, portalRes, msgRes, docRes, progressRes] = await Promise.all([
       db.from(AICOS.tables.clients).select('id, business_name, status, tier, monthly_retainer, upsell_ready_flag, account_manager').order('created_at', { ascending: false }).limit(8),
       db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').order('created_at', { ascending: false }).limit(8),
-      db.from(AICOS.tables.deliveryMetrics).select('*').order('date_key', { ascending: false }).limit(7),
       db.from(AICOS.tables.portalTasks).select('id, status').limit(50),
       db.from(AICOS.tables.portalMessages).select('id').limit(50),
       db.from(AICOS.tables.portalDocuments).select('id').limit(50),
@@ -72,15 +68,11 @@ export default function DeliveryConsole() {
 
     const clientRows = clientRes.data || []
     const sprintRows = sprintRes.data || []
-    const metricRows = metricRes.data || []
     const portalRows = portalRes.data || []
     const messageRows = msgRes.data || []
     const documentRows = docRes.data || []
     const progressRows = progressRes.data || []
 
-    setClients(clientRows)
-    setSprints(sprintRows)
-    setMetrics(metricRows)
     setSummary({
       total: clientRows.length,
       active: clientRows.filter((c: any) => c.status === 'active').length,
@@ -150,33 +142,6 @@ export default function DeliveryConsole() {
         </div>
       </Panel>
 
-      <Panel title="Latest Clients">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {clients.map(c => (
-            <Row key={c.id} left={c.business_name} right={`${c.tier || 'Tier'} · ${c.status || 'active'} · ${c.monthly_retainer ? `R${c.monthly_retainer}` : 'no retainer yet'}`} />
-          ))}
-          {clients.length === 0 && <Empty label="No clients yet" />}
-        </div>
-      </Panel>
-
-      <Panel title="Active Sprints">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {sprints.map(s => (
-            <Row key={s.id} left={`${s.client_name || 'Client'} · Sprint ${s.sprint_number || 1}`} right={`${s.status || 'setup'} · Leads ${s.leads_generated || 0} · Revenue ${s.revenue_attributed || 0}`} />
-          ))}
-          {sprints.length === 0 && <Empty label="No sprints yet" />}
-        </div>
-      </Panel>
-
-      <Panel title="Delivery Metrics">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {metrics.map(m => (
-            <Row key={m.id} left={m.date_key} right={`Profile visits ${m.profile_visits || 0} · Bookings ${m.appointments_booked || 0} · Cash ${m.cash_collected || 0}`} />
-          ))}
-          {metrics.length === 0 && <Empty label="No delivery metrics yet" />}
-        </div>
-      </Panel>
-
     </ConsoleShell>
   )
 }
@@ -191,17 +156,4 @@ function MiniMetric({ label, value }: { label: string; value: string | number })
       </div>
     </div>
   )
-}
-
-function Row({ left, right }: { left: string; right: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '14px 16px', background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 10 }}>
-      <strong style={{ fontSize: 14 }}>{left}</strong>
-      <span style={{ fontSize: 12, color: 'var(--grey)' }}>{right}</span>
-    </div>
-  )
-}
-
-function Empty({ label }: { label: string }) {
-  return <div style={{ padding: 18, color: 'var(--grey)', fontSize: 13, border: '1px dashed var(--border2)', borderRadius: 10 }}>{label}</div>
 }

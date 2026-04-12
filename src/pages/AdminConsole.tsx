@@ -40,23 +40,20 @@ const MODULES = [
 
 export default function AdminConsole() {
   const [ops, setOps] = useState<any[]>([])
-  const [finance, setFinance] = useState<any[]>([])
   const [alerts, setAlerts] = useState({ approvals: 0, exceptions: 0, integrations: 0 })
   const db = supabase as any
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    const [opsRes, financeRes, approvalsRes, exceptionsRes, integrationsRes] = await Promise.all([
+    const [opsRes, approvalsRes, exceptionsRes, integrationsRes] = await Promise.all([
       db.from(AICOS.views.opsManagerStatus).select('*').order('name', { ascending: true }),
-      db.from(AICOS.tables.financialSnapshots).select('*').order('month', { ascending: false }).limit(6),
       db.from(AICOS.tables.approvalLogs).select('id', { count: 'exact', head: true }),
       db.from(AICOS.tables.exceptionLogs).select('id', { count: 'exact', head: true }),
       db.from(AICOS.tables.integrationEvents).select('id', { count: 'exact', head: true }),
     ])
 
     setOps(opsRes.data || [])
-    setFinance(financeRes.data || [])
     setAlerts({
       approvals: approvalsRes.count || 0,
       exceptions: exceptionsRes.count || 0,
@@ -133,14 +130,6 @@ export default function AdminConsole() {
         </div>
       </Panel>
 
-      <Panel title="Recent Financial Snapshots">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {finance.map(f => (
-            <Row key={f.id} left={f.month} right={`MRR ${f.gross_mrr || 0} · Profit ${f.net_profit || 0} · Margin ${f.profit_margin || 0}%`} />
-          ))}
-          {finance.length === 0 && <Empty label="No financial snapshots yet" />}
-        </div>
-      </Panel>
     </ConsoleShell>
   )
 }
