@@ -3,7 +3,8 @@ export function isHtmlDocument(fileName: string, fileType?: string | null) {
 }
 
 export function openTemplateViewer(filePath: string, fileName: string) {
-  const url = `/#/template-view?url=${encodeURIComponent(filePath)}&name=${encodeURIComponent(fileName)}`
+  const base = window.location.href.split('#')[0].split('?')[0]
+  const url = `${base}#/template-view?url=${encodeURIComponent(filePath)}&name=${encodeURIComponent(fileName)}`
   window.open(url, '_blank', 'noopener')
 }
 
