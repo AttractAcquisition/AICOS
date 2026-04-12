@@ -9,7 +9,7 @@ import { getExternalLinksForConsole } from '../lib/external-links'
 
 const MODULES = [
   {
-    title: 'Brain Chat',
+    title: 'AICOS Chat',
     path: '/brain/chat',
     description: 'Ask the knowledge relay to draft, audit, or explain systems.',
     icon: MessageSquare,
@@ -33,7 +33,7 @@ const MODULES = [
     icon: BookOpen,
   },
   {
-    title: 'Content Hub',
+    title: 'External Software Links',
     path: '/brain/content',
     description: 'Centralized access to external tools and ecosystem links.',
     icon: Paperclip,

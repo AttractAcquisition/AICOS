@@ -16,16 +16,16 @@ const MODULES = [
     icon: Briefcase,
   },
   {
+    title: 'Client Portal',
+    path: '/delivery/portal',
+    description: 'Assign portal tasks, upload files, and keep the client thread active.',
+    icon: MessageSquare,
+  },
+  {
     title: 'Proof Sprint',
     path: '/delivery/sprints',
     description: 'Run the sprint workflow and drill into daily performance.',
     icon: Layers3,
-  },
-  {
-    title: 'Delivery Portal',
-    path: '/delivery/portal',
-    description: 'Assign portal tasks, upload files, and keep the delivery thread active.',
-    icon: MessageSquare,
   },
   {
     title: 'Proof Brand',
@@ -63,6 +63,9 @@ export default function DeliveryConsole() {
   async function load() {
     const isAdmin = role === 'admin'
     const managerId = metadata_id || null
+    const managerClientIds = isAdmin
+      ? []
+      : (await db.from(AICOS.tables.clients).select('id').eq('account_manager', managerId)).data?.map((c: any) => c.id) || []
 
     const [clientRes, sprintRes, portalRes, msgRes, docRes, progressRes] = await Promise.all([
       isAdmin
@@ -70,7 +73,7 @@ export default function DeliveryConsole() {
         : db.from(AICOS.tables.clients).select('id, business_name, status, tier, monthly_retainer, upsell_ready_flag, account_manager').eq('account_manager', managerId).order('created_at', { ascending: false }).limit(8),
       isAdmin
         ? db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').order('created_at', { ascending: false }).limit(8)
-        : db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').in('client_id', (await db.from(AICOS.tables.clients).select('id').eq('account_manager', managerId)).data?.map((c: any) => c.id) || []).order('created_at', { ascending: false }).limit(8),
+        : db.from(AICOS.tables.sprints).select('id, client_name, status, sprint_number, start_date, revenue_attributed, leads_generated').in('client_id', managerClientIds).order('created_at', { ascending: false }).limit(8),
       isAdmin
         ? db.from(AICOS.tables.portalTasks).select('id, status').limit(50)
         : db.from(AICOS.tables.portalTasks).select('id, status').eq('manager_id', managerId).limit(50),

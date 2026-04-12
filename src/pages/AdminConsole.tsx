@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AICOS } from '../lib/aicos'
 import { ConsoleShell, Panel } from '../components/ConsoleShell'
-import { Shield, DollarSign, AlertTriangle, Activity, Users, ArrowRight, Settings, BarChart3, ReceiptText, FileText, ClipboardList, Target } from 'lucide-react'
+import { Shield, DollarSign, AlertTriangle, Activity, ArrowRight, Settings, BarChart3, ReceiptText, FileText, ClipboardList, Target } from 'lucide-react'
 import ExternalLinksGrid from '../components/ExternalLinksGrid'
 import { getExternalLinksForConsole } from '../lib/external-links'
 
@@ -15,16 +15,22 @@ const MODULES = [
     icon: Settings,
   },
   {
-    title: 'Finance Dashboard',
-    path: '/admin/finance',
-    description: 'Review monthly revenue, margins, and burn against target.',
-    icon: BarChart3,
+    title: 'SPOA Studio',
+    path: '/spoa',
+    description: 'Generate strategic plans of action for prospects.',
+    icon: Target,
   },
   {
     title: 'Capital Flow',
     path: '/admin/income',
-    description: 'Track ledger entries and daily cash movement.',
+    description: 'Track transaction movement and cash flow.',
     icon: ReceiptText,
+  },
+  {
+    title: 'Finance Dashboard',
+    path: '/admin/finance',
+    description: 'Review monthly revenue, margins, and burn against target.',
+    icon: BarChart3,
   },
   {
     title: 'Templates',
@@ -38,30 +44,21 @@ const MODULES = [
     description: 'Open the role-aware SOP library.',
     icon: ClipboardList,
   },
-  {
-    title: 'SPOA Studio',
-    path: '/spoa',
-    description: 'Generate strategic plans of action for prospects.',
-    icon: Target,
-  },
 ]
 
 export default function AdminConsole() {
-  const [ops, setOps] = useState<any[]>([])
   const [alerts, setAlerts] = useState({ approvals: 0, exceptions: 0, integrations: 0 })
   const db = supabase as any
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    const [opsRes, approvalsRes, exceptionsRes, integrationsRes] = await Promise.all([
-      db.from(AICOS.views.opsManagerStatus).select('*').order('name', { ascending: true }),
+    const [approvalsRes, exceptionsRes, integrationsRes] = await Promise.all([
       db.from(AICOS.tables.approvalLogs).select('id', { count: 'exact', head: true }),
       db.from(AICOS.tables.exceptionLogs).select('id', { count: 'exact', head: true }),
       db.from(AICOS.tables.integrationEvents).select('id', { count: 'exact', head: true }),
     ])
 
-    setOps(opsRes.data || [])
     setAlerts({
       approvals: approvalsRes.count || 0,
       exceptions: exceptionsRes.count || 0,
@@ -75,7 +72,6 @@ export default function AdminConsole() {
       title="Admin Console"
       subtitle="System health, finance, governance, and live operational control."
       stats={[
-        { label: 'Operators', value: ops.length, icon: Users },
         { label: 'Approvals', value: alerts.approvals, icon: Shield },
         { label: 'Exceptions', value: alerts.exceptions, icon: AlertTriangle },
         { label: 'Integrations', value: alerts.integrations, icon: Activity },
@@ -124,21 +120,11 @@ export default function AdminConsole() {
 
       <Panel title="Mapped Backend Objects">
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <MiniMetric label="View" value={AICOS.views.opsManagerStatus} />
           <MiniMetric label="Table" value={AICOS.tables.financialSnapshots} />
           <MiniMetric label="Table" value={AICOS.tables.ledgerEntries} />
           <MiniMetric label="Table" value={AICOS.tables.approvalLogs} />
           <MiniMetric label="Table" value={AICOS.tables.exceptionLogs} />
           <MiniMetric label="Table" value={AICOS.tables.integrationEvents} />
-        </div>
-      </Panel>
-
-      <Panel title="Ops Manager Status">
-        <div style={{ display: 'grid', gap: 10 }}>
-          {ops.map(o => (
-            <Row key={o.manager_id} left={o.name || o.manager_id} right={`${o.role || 'role'} · ${o.tasks_completed || 0}/${o.total_tasks_assigned || 0} tasks · ${o.last_active || 'no activity'}`} />
-          ))}
-          {ops.length === 0 && <Empty label="No ops rows yet" />}
         </div>
       </Panel>
 
@@ -156,17 +142,4 @@ function MiniMetric({ label, value }: { label: string; value: string | number })
       </div>
     </div>
   )
-}
-
-function Row({ left, right }: { left: string; right: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '14px 16px', background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 10 }}>
-      <strong style={{ fontSize: 14 }}>{left}</strong>
-      <span style={{ fontSize: 12, color: 'var(--grey)' }}>{right}</span>
-    </div>
-  )
-}
-
-function Empty({ label }: { label: string }) {
-  return <div style={{ padding: 18, color: 'var(--grey)', fontSize: 13, border: '1px dashed var(--border2)', borderRadius: 10 }}>{label}</div>
 }

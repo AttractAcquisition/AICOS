@@ -59,6 +59,13 @@ export const AICOS = {
 
 export const CONSOLES = [
   {
+    key: 'admin',
+    title: 'Admin Console',
+    route: AICOS.routes.admin,
+    description: 'System status, finance, approvals, exceptions, and governance.',
+    tables: [AICOS.views.opsManagerStatus, AICOS.tables.financialSnapshots, AICOS.tables.ledgerEntries, AICOS.tables.approvalLogs, AICOS.tables.exceptionLogs, AICOS.tables.integrationEvents, AICOS.tables.profiles],
+  },
+  {
     key: 'distribution',
     title: 'Distribution Console',
     route: AICOS.routes.distribution,
@@ -71,13 +78,6 @@ export const CONSOLES = [
     route: AICOS.routes.delivery,
     description: 'Clients, sprints, delivery metrics, and delivery portal operations.',
     tables: [AICOS.tables.clients, AICOS.tables.sprints, AICOS.tables.deliveryMetrics, AICOS.tables.deliveryProgress, AICOS.tables.portalTasks, AICOS.tables.portalMessages, AICOS.tables.portalDocuments],
-  },
-  {
-    key: 'admin',
-    title: 'Admin Console',
-    route: AICOS.routes.admin,
-    description: 'System status, finance, approvals, exceptions, and governance.',
-    tables: [AICOS.views.opsManagerStatus, AICOS.tables.financialSnapshots, AICOS.tables.ledgerEntries, AICOS.tables.approvalLogs, AICOS.tables.exceptionLogs, AICOS.tables.integrationEvents, AICOS.tables.profiles],
   },
   {
     key: 'brain',

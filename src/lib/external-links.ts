@@ -1,4 +1,4 @@
-import { type LucideIcon, Layout, Database, MessageSquare, Workflow, Calendar, BarChart, Library, Briefcase, Code, Github, Facebook, Bot, Cpu, BrainCircuit, Instagram, Sparkles, Linkedin, Mail, FolderOpen, Globe, Settings, FileText, Search, DollarSign } from 'lucide-react'
+import { type LucideIcon, Layout, Database, MessageSquare, Workflow, Calendar, BarChart, Library, Briefcase, Code, Github, Facebook, Bot, Cpu, BrainCircuit, Instagram, Sparkles, Linkedin, Mail, FolderOpen, Globe, Settings, FileText, DollarSign } from 'lucide-react'
 
 export type ConsoleKey = 'admin' | 'distribution' | 'delivery' | 'knowledge'
 
@@ -60,7 +60,7 @@ const ALL_LINKS: ExternalLinkItem[] = [
   { id: 'grok', name: 'Grok', description: 'Real-time AI research and analysis.', url: 'https://grok.x.ai/', status: 'AI', color: '#ffffff', icon: BrainCircuit, consoles: ['knowledge'] },
   { id: 'gemini', name: 'Gemini', description: 'Google AI for multimodal reasoning and tasks.', url: 'https://gemini.google.com/', status: 'AI', color: '#8E24AA', icon: Sparkles, consoles: ['knowledge'] },
   { id: 'claude-ai', name: 'Claude AI', description: 'Anthropic AI for detailed analysis and writing.', url: 'https://claude.ai/', status: 'AI', color: '#D97757', icon: Bot, consoles: ['knowledge'] },
-  { id: 'perplexity', name: 'Perplexity', description: 'Research engine for fast source-backed answers.', url: 'https://www.perplexity.ai/', status: 'Research', color: '#111111', icon: Search, consoles: ['knowledge'] },
+  { id: 'perplexity', name: 'Perplexity AI', description: 'Research engine for fast source-backed answers.', url: 'https://www.perplexity.ai/', status: 'Research', color: '#111111', icon: BrainCircuit, consoles: ['knowledge'] },
 ]
 
 export function getExternalLinksForConsole(consoleKey: ConsoleKey) {

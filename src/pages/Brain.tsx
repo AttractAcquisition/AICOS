@@ -84,7 +84,7 @@ export default function Brain() {
             </span>
           </div>
           <h1 style={{ fontFamily: 'Playfair Display', fontSize: '32px', fontWeight: 700, color: 'var(--white)', margin: 0 }}>
-            The AA Brain
+            AICOS Chat
           </h1>
         </div>
         <div style={{ textAlign: 'right' }}>

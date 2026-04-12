@@ -49,9 +49,10 @@ export default function ExternalLinksGrid({ links }: { links: ExternalLinkItem[]
                   fontFamily: 'DM Mono',
                   padding: '4px 8px',
                   borderRadius: '4px',
-                  background: 'var(--bg)',
-                  border: `1px solid ${platform.color}44`,
-                  color: platform.color,
+                  background: platform.status === 'Communication' ? 'rgba(255,255,255,0.08)' : 'var(--bg)',
+                  border: `1px solid ${platform.status === 'Communication' ? 'rgba(255,255,255,0.24)' : `${platform.color}44`}`,
+                  color: platform.status === 'Communication' ? 'var(--white)' : platform.color,
+                  fontWeight: 700,
                 }}>
                   {platform.status}
                 </span>
