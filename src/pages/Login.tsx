@@ -41,9 +41,9 @@ export default function Login() {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
           <img
-            src="/logo.png"
+            src="/logo.svg"
             alt="Attract Acquisition"
-            style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'contain', background: 'linear-gradient(135deg, #0d1f1c, #07100E)', border: '1px solid var(--border2)', padding: 4 }}
+            style={{ width: 52, height: 52, objectFit: 'contain' }}
           />
           <div>
             <div style={{ fontFamily: 'Playfair Display', fontSize: 20, fontWeight: 700 }}>AICOS</div>

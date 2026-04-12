@@ -15,9 +15,9 @@ export default function Layout() {
       <aside style={{ borderRight: '1px solid var(--border2)', padding: 20, position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
           <img
-            src="/logo.png"
+            src="/logo.svg"
             alt="Attract Acquisition"
-            style={{ width: 42, height: 42, borderRadius: 12, objectFit: 'contain', background: 'linear-gradient(135deg, #0d1f1c, #07100E)', border: '1px solid var(--border2)', padding: 4 }}
+            style={{ width: 48, height: 48, objectFit: 'contain' }}
           />
           <div>
             <div style={{ fontFamily: 'DM Mono', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--grey)' }}>AIOS</div>
