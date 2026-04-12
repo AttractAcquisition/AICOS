@@ -54,16 +54,23 @@ const MODULES = [
 ]
 
 export default function DistributionConsole() {
-  const { metadata_id } = useAuth()
+  const { role, metadata_id } = useAuth()
   const [stats, setStats] = useState({ total: 0, active: 0, won: 0, progress: 0 })
   const db = supabase as any
 
-  useEffect(() => { load() }, [metadata_id])
+  useEffect(() => { load() }, [metadata_id, role])
 
   async function load() {
+    const isAdmin = role === 'admin'
+    const managerId = metadata_id || null
+
     const [{ data: prospectRows }, { data: progressRows }] = await Promise.all([
-      db.from(AICOS.tables.prospects).select('id, business_name, status, pipeline_stage, icp_tier, vertical, updated_at').order('updated_at', { ascending: false }).limit(8),
-      db.from(AICOS.tables.distributionProgress).select('*').limit(40),
+      isAdmin
+        ? db.from(AICOS.tables.prospects).select('id, business_name, status, pipeline_stage, icp_tier, vertical, updated_at').order('updated_at', { ascending: false }).limit(8)
+        : db.from(AICOS.tables.prospects).select('id, business_name, status, pipeline_stage, icp_tier, vertical, updated_at').eq('assigned_to', managerId).order('updated_at', { ascending: false }).limit(8),
+      isAdmin
+        ? db.from(AICOS.tables.distributionProgress).select('*').limit(40)
+        : db.from(AICOS.tables.distributionProgress).select('*').eq('manager_id', managerId).limit(40),
     ])
 
     const allProspects = prospectRows || []

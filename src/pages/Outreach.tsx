@@ -5,6 +5,8 @@ import {
   ChevronLeft, ChevronRight, Target 
 } from 'lucide-react'
 import { useToast } from '../lib/toast'
+import { useAuth } from '../lib/auth'
+import { getVisibleTemplateCategories, roleToLibraryScope } from '../lib/library'
 import { format, subDays, addDays } from 'date-fns'
 
 interface Template {
@@ -18,6 +20,8 @@ interface Template {
 const DAILY_TARGET = 25;
 
 export default function Outreach() {
+  const { role } = useAuth()
+  const scope = roleToLibraryScope(role)
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -34,7 +38,13 @@ export default function Outreach() {
   useEffect(() => { loadDailyProspects() }, [selectedDate])
 
   async function loadTemplates() {
-    const { data } = await supabase.from('templates').select('*').eq('category', 'whatsapp')
+    const allowedCategories = getVisibleTemplateCategories(scope)
+    if (!allowedCategories.length) {
+      setTemplates([])
+      return
+    }
+
+    const { data } = await supabase.from('templates').select('*').in('category', allowedCategories)
     if (data) {
       setTemplates(data.map(t => ({
         ...t,

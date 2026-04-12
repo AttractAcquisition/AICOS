@@ -26,28 +26,30 @@ export default function Layout() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
-          <Link
-            to="/"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '12px 14px',
-              borderRadius: 12,
-              textDecoration: 'none',
-              border: `1px solid ${activeHome ? 'var(--teal)' : 'var(--border2)'}`,
-              background: activeHome ? 'rgba(0,229,195,0.05)' : 'var(--bg2)',
-              color: 'var(--white)',
-            }}
-          >
-            <Home size={16} color={activeHome ? 'var(--teal)' : 'var(--grey)'} />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Main Dashboard</div>
-              <div style={{ fontSize: 10, fontFamily: 'DM Mono', textTransform: 'uppercase', color: 'var(--grey)' }}>Console Hub</div>
-            </div>
-          </Link>
-        </div>
+        {role !== 'distribution' && (
+          <div style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
+            <Link
+              to="/"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 14px',
+                borderRadius: 12,
+                textDecoration: 'none',
+                border: `1px solid ${activeHome ? 'var(--teal)' : 'var(--border2)'}`,
+                background: activeHome ? 'rgba(0,229,195,0.05)' : 'var(--bg2)',
+                color: 'var(--white)',
+              }}
+            >
+              <Home size={16} color={activeHome ? 'var(--teal)' : 'var(--grey)'} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Main Dashboard</div>
+                <div style={{ fontSize: 10, fontFamily: 'DM Mono', textTransform: 'uppercase', color: 'var(--grey)' }}>Console Hub</div>
+              </div>
+            </Link>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gap: 8 }}>
           {routes.map(route => {
