@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../lib/toast';
-import { Users, Shield, Link } from 'lucide-react';
+import { Users, Shield, Link, Copy } from 'lucide-react';
 
 // Validates that a string is a well-formed UUID v4 before writing it to the DB.
 // This prevents silent RLS failures caused by whitespace or malformed pastes.
@@ -11,6 +11,7 @@ function isValidUUID(val: string): boolean {
 
 export default function AdminControl() {
   const [clientRecords, setClientRecords] = useState<any[]>([]);
+  const [profileRecords, setProfileRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [roleForm, setRoleForm] = useState({ userId: '', role: 'delivery', metadataId: '' });
   const [roleUpdating, setRoleUpdating] = useState(false);
@@ -24,13 +25,23 @@ export default function AdminControl() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from('clients')
-        .select('id, business_name, owner_name, account_manager, account_manager_name')
-        .order('business_name', { ascending: true });
+      const [clientsResult, profilesResult] = await Promise.all([
+        (supabase as any)
+          .from('clients')
+          .select('id, business_name, owner_name, account_manager, account_manager_name')
+          .order('business_name', { ascending: true }),
+        (supabase as any)
+          .from('profiles')
+          .select('id, email, full_name, role, client_id')
+          .in('role', ['admin', 'distribution', 'delivery'])
+          .order('role', { ascending: true })
+          .order('full_name', { ascending: true }),
+      ]);
 
-      if (error) throw error;
-      setClientRecords(data || []);
+      if (clientsResult.error) throw clientsResult.error;
+      if (profilesResult.error) throw profilesResult.error;
+      setClientRecords(clientsResult.data || []);
+      setProfileRecords(profilesResult.data || []);
     } catch (err: any) {
       console.error('Fetch error:', err.message);
       toast.addToast?.('Failed to load data', 'error');
@@ -208,6 +219,39 @@ export default function AdminControl() {
         <h2 className="text-lg font-semibold mb-6 flex items-center gap-2 text-white">
           <Link size={20} className="text-teal-400" /> Infrastructure Mapping
         </h2>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+          {['admin', 'distribution', 'delivery'].map(role => (
+            <div key={role} className="rounded-xl border border-white/5 bg-zinc-950/60 p-4">
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-3">{role} UUIDs</div>
+              <div className="space-y-3">
+                {profileRecords.filter(p => p.role === role).map(profile => (
+                  <div key={profile.id} className="rounded-lg border border-white/5 bg-black/20 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm text-white font-medium">{profile.full_name || profile.email || 'Unnamed'}</div>
+                        <div className="text-[10px] font-mono text-zinc-500 mt-0.5">{profile.email}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(profile.id)
+                          toast.addToast?.('UUID copied', 'success')
+                        }}
+                        className="shrink-0 inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-zinc-400 border border-white/10 rounded px-2 py-1 hover:border-teal-500 hover:text-teal-400 transition-colors"
+                      >
+                        <Copy size={11} /> Copy
+                      </button>
+                    </div>
+                    <div className="mt-3 text-[10px] font-mono text-teal-400 break-all leading-5">{profile.id}</div>
+                  </div>
+                ))}
+                {profileRecords.filter(p => p.role === role).length === 0 && (
+                  <div className="text-xs text-zinc-600 font-mono border border-dashed border-white/10 rounded-lg p-3">No {role} users yet.</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
