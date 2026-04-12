@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
       score,
     }))
 
-    const supabase = createServiceClient()
+    const supabase = createUserClient(gate.authHeader)
     const { data: queryRow, error: insertError } = await supabase
       .from('knowledge_queries')
       .insert({
