@@ -78,6 +78,8 @@ create table if not exists public.positioning_documents (
   updated_at timestamptz not null default now()
 );
 
+drop table if exists public.scripts cascade;
+
 create table if not exists public.scripts (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients(id) on delete cascade,
