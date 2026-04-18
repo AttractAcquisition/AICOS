@@ -296,7 +296,7 @@ const SPRINT_BONUSES: BonusDef[] = [
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export default function ProofSprint() {
+export default function ProofSprint({ blankTracker = false }: { blankTracker?: boolean } = {}) {
   const { role, user } = useAuth()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -451,7 +451,9 @@ export default function ProofSprint() {
       {/* ── Delivery Workspace ── */}
       <div className="card" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
-        {!selectedClient ? (
+        {blankTracker ? (
+          <div style={{ flex: 1, minHeight: 560 }} />
+        ) : !selectedClient ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--grey2)', gap: 12 }}>
             <div style={{ padding: 20, borderRadius: '50%', background: 'var(--bg2)' }}>
               <Zap size={32} color="var(--teal)" />

@@ -22,10 +22,13 @@ import Outreach from './pages/Outreach'
 import CRM from './pages/crm'
 import Clients from './pages/Clients'
 import Sprints from './pages/Sprints'
+import ProofSprintV2 from './pages/ProofSprintV2'
 import SprintDetail from './pages/SprintDetail'
 import DeliveryPortal from './pages/DeliveryPortal'
 import ProofBrand from './pages/ProofBrand'
+import ProofBrandV2 from './pages/ProofBrandV2'
 import AuthorityBrand from './pages/AuthorityBrand'
+import AuthorityBrandV2 from './pages/AuthorityBrandV2'
 import Studio from './pages/Studio'
 import SPOA from './pages/SPOA'
 import SprintDashboard from './pages/SprintDashboard'
@@ -99,10 +102,13 @@ export default function App() {
               <Route path="delivery" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryConsole /></RoleWrapper>} />
               <Route path="delivery/clients" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Clients /></RoleWrapper>} />
               <Route path="delivery/sprints" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><Sprints /></RoleWrapper>} />
+              <Route path="delivery/sprints-v2" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><ProofSprintV2 /></RoleWrapper>} />
               <Route path="delivery/sprints/:id" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><SprintDetail /></RoleWrapper>} />
               <Route path="delivery/portal" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><DeliveryPortal /></RoleWrapper>} />
               <Route path="delivery/proof-brand" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><ProofBrand /></RoleWrapper>} />
+              <Route path="delivery/proof-brand-v2" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><ProofBrandV2 /></RoleWrapper>} />
               <Route path="delivery/authority-brand" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><AuthorityBrand /></RoleWrapper>} />
+              <Route path="delivery/authority-brand-v2" element={<RoleWrapper allowedRoles={['admin', 'delivery']}><AuthorityBrandV2 /></RoleWrapper>} />
               <Route path="brain" element={<RoleWrapper allowedRoles={['admin']}><BrainConsole /></RoleWrapper>} />
               <Route path="brain/chat" element={<RoleWrapper allowedRoles={['admin']}><Brain /></RoleWrapper>} />
               <Route path="brain/prompts" element={<RoleWrapper allowedRoles={['admin']}><ChatPage /></RoleWrapper>} />

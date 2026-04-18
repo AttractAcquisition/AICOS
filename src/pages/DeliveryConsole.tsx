@@ -28,15 +28,33 @@ const MODULES = [
     icon: Layers3,
   },
   {
+    title: 'Proof Sprint V2',
+    path: '/delivery/sprints-v2',
+    description: 'Blank tracker variant for the sprint workflow.',
+    icon: Layers3,
+  },
+  {
     title: 'Proof Brand',
     path: '/delivery/proof-brand',
     description: 'Work the Proof Brand install and upgrade path.',
     icon: FileText,
   },
   {
+    title: 'Proof Brand V2',
+    path: '/delivery/proof-brand-v2',
+    description: 'Blank tracker variant for the Proof Brand workflow.',
+    icon: FileText,
+  },
+  {
     title: 'Authority Brand',
     path: '/delivery/authority-brand',
     description: 'Move clients into the authority layer.',
+    icon: Activity,
+  },
+  {
+    title: 'Authority Brand V2',
+    path: '/delivery/authority-brand-v2',
+    description: 'Blank tracker variant for the Authority Brand workflow.',
     icon: Activity,
   },
   {
