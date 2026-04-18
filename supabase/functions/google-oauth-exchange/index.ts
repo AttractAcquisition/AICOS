@@ -2,7 +2,7 @@ import {
   exchangeGoogleAuthorizationCode,
   fetchGoogleAccountEmail,
   getStoredGoogleWorkspaceConnection,
-  upsertGoogleWorkspaceConnection,
+  storeGoogleWorkspaceConnection,
   verifyGoogleOauthState,
 } from '../_shared/google-oauth.ts'
 import { corsHeaders, jsonResponse } from '../_shared/supabase.ts'
@@ -32,7 +32,7 @@ Deno.serve(async req => {
     const accessTokenExpiresAt = new Date(Date.now() + Number(tokenData.expires_in || 0) * 1000)
 
     if (tokenData.refresh_token) {
-      await upsertGoogleWorkspaceConnection({
+      await storeGoogleWorkspaceConnection({
         businessName: parsedState.businessName,
         accountEmail,
         refreshToken: tokenData.refresh_token,

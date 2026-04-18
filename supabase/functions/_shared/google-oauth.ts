@@ -182,7 +182,7 @@ export async function fetchGoogleAccountEmail(accessToken: string) {
   return data.email.toLowerCase()
 }
 
-export async function upsertGoogleWorkspaceConnection(params: {
+export async function storeGoogleWorkspaceConnection(params: {
   businessName: string
   accountEmail: string
   refreshToken: string
@@ -192,9 +192,13 @@ export async function upsertGoogleWorkspaceConnection(params: {
 }) {
   const supabase = createServiceClient()
   const encrypted = await encryptGoogleSecret(params.refreshToken)
-  const { error } = await supabase
-    .from('google_workspace_oauth_connections')
-    .upsert({
+  const { error } = await supabase.from('integration_events').insert({
+    integration_name: 'google_workspace_oauth',
+    source_system: 'google',
+    target_system: 'gmail',
+    event_type: 'oauth_connection',
+    status: 'completed',
+    payload: {
       business_name: params.businessName,
       account_email: params.accountEmail,
       provider: 'google',
@@ -202,9 +206,9 @@ export async function upsertGoogleWorkspaceConnection(params: {
       refresh_token_encrypted: encrypted,
       token_type: params.tokenType ?? 'Bearer',
       access_token_expires_at: params.accessTokenExpiresAt?.toISOString() ?? null,
-      status: 'active',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'business_name,account_email,provider' })
+    },
+    processed_at: new Date().toISOString(),
+  })
 
   if (error) {
     throw error
@@ -214,24 +218,31 @@ export async function upsertGoogleWorkspaceConnection(params: {
 export async function getStoredGoogleWorkspaceConnection(businessName: string, accountEmail: string) {
   const supabase = createServiceClient()
   const { data, error } = await supabase
-    .from('google_workspace_oauth_connections')
+    .from('integration_events')
     .select('*')
-    .eq('business_name', businessName)
-    .eq('account_email', accountEmail)
-    .eq('provider', 'google')
-    .maybeSingle()
+    .eq('integration_name', 'google_workspace_oauth')
+    .eq('source_system', 'google')
+    .eq('event_type', 'oauth_connection')
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+    .limit(10)
 
   if (error) throw error
-  return data as null | {
+  const row = (data || []).find((entry: any) => {
+    const payload = entry?.payload || {}
+    return payload.business_name === businessName && payload.account_email === accountEmail
+  })
+  return row as null | {
     id: string
-    business_name: string
-    account_email: string
-    provider: string
-    scopes: string[]
-    refresh_token_encrypted: { iv: string; ciphertext: string }
-    token_type: string
-    access_token_expires_at: string | null
-    status: string
+    payload: {
+      business_name: string
+      account_email: string
+      provider: string
+      scopes: string[]
+      refresh_token_encrypted: { iv: string; ciphertext: string }
+      token_type: string
+      access_token_expires_at: string | null
+    }
   }
 }
 
