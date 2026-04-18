@@ -475,16 +475,16 @@ values
   ('p03_ad_variants', '2.0', 'AdCreative.ai Variant Suite', 'D3', 'Seeded from final plan', null, array['D1'], array['proof_sprint_ad_variants'], true, null, null, true, 'OpenAI draft + OpenClaw agent'),
   ('p04_lead_magnet', '2.0', 'Lead Magnet Asset', 'D4', 'Seeded from final plan', null, array['D1'], array['proof_sprint_lead_magnets'], false, null, null, true, 'Direct OpenAI generation'),
   ('p05_meta_conversion', '2.0', 'Meta Conversion Campaign', 'D5', 'Seeded from final plan', null, array['D1','D2','D3'], array['proof_sprint_campaign_specs'], true, null, null, true, 'OpenAI spec + OpenClaw Meta build job'),
-  ('p06_meta_leads_campaign', '2.0', 'Meta Leads Campaign', 'D6', 'Seeded from final plan', null, array['D1','D4','D5'], array['proof_sprint_campaign_specs'], true, null, null, true, 'OpenAI spec + OpenClaw Meta build job'),
+  ('p06_meta_leads', '2.0', 'Meta Leads Campaign', 'D6', 'Seeded from final plan', null, array['D1','D4','D5'], array['proof_sprint_campaign_specs'], true, null, null, true, 'OpenAI spec + OpenClaw Meta build job'),
   ('p07_whatsapp_qualifier', '2.0', 'WhatsApp DM Qualifier Script', 'D7', 'Seeded from final plan', null, array['D1','D5'], array['proof_sprint_whatsapp_scripts'], false, null, null, true, 'Direct OpenAI generation'),
   ('p08_manychat_flow', '2.0', 'WhatsApp Conversion Flow', 'D8', 'Seeded from final plan', null, array['D5','D7'], array['proof_sprint_manychat_flows'], true, null, null, true, 'OpenAI spec + optional ManyChat agent job'),
   ('p09_daily_metrics', '2.0', 'Daily Sprint Metrics Engine', 'D9', 'Seeded from final plan', null, array['D5','D6'], array['proof_sprint_daily_metrics'], true, 1, '08:00', true, 'Cron-driven OpenClaw job'),
   ('p10_stabilisation', '2.0', 'Day 3 Stabilisation Protocol', 'D10', 'Seeded from final plan', null, array['D9'], array['proof_sprint_stabilisation_reports'], true, 3, '20:00', true, 'Cron-driven OpenClaw job'),
   ('p11_optimisation_day4', '2.0', 'Day 4 Optimisation Report', 'D11', 'Seeded from final plan', null, array['D9','D10'], array['proof_sprint_optimisation_reports'], true, 4, '09:00', true, 'Cron-driven OpenClaw job'),
-  ('p11b_acceleration_day8', '2.0', 'Day 8 Acceleration Phase', 'D13', 'Seeded from final plan', null, array['D9','D11'], array['proof_sprint_optimisation_reports'], true, 8, '09:00', true, 'Cron-driven OpenClaw job'),
+  ('p13_acceleration_day8', '2.0', 'Day 8 Acceleration Phase', 'D13', 'Seeded from final plan', null, array['D9','D11'], array['proof_sprint_optimisation_reports'], true, 8, '09:00', true, 'Cron-driven OpenClaw job'),
   ('p12_client_update_day7', '2.0', 'Day 7 Mid-Sprint Client Update', 'D12', 'Seeded from final plan', null, array['D9'], array['proof_sprint_client_updates'], true, 7, '10:00', true, 'Cron-driven WhatsApp send'),
-  ('p13_final_data_lock', '2.0', 'Day 13 Final Data Lock', 'D14', 'Seeded from final plan', null, array['D9','D11'], array['proof_sprint_final_data_locks'], false, 13, '20:00', true, 'Cron-driven calculation lock'),
-  ('p14_demand_proof', '2.0', 'Demand Proof Document', 'D15', 'Seeded from final plan', null, array['D14'], array['proof_sprint_demand_proof_documents'], true, null, null, true, 'Manual closeout OpenClaw delivery')
+  ('p14_final_data_lock', '2.0', 'Day 13 Final Data Lock', 'D14', 'Seeded from final plan', null, array['D9','D11'], array['proof_sprint_final_data_locks'], false, 13, '20:00', true, 'Cron-driven calculation lock'),
+  ('p15_demand_proof', '2.0', 'Demand Proof Document', 'D15', 'Seeded from final plan', null, array['D14'], array['proof_sprint_demand_proof_documents'], true, null, null, true, 'Manual closeout OpenClaw delivery')
 on conflict (prompt_key, version) do update
   set title = excluded.title,
       deliverable_key = excluded.deliverable_key,

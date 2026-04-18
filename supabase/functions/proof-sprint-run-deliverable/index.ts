@@ -96,7 +96,7 @@ function configFor(deliverableKey: DeliverableKey) {
     case 'D5':
       return { ...base, outputTable: 'proof_sprint_campaign_specs', promptKey: 'p05_meta_conversion', title: 'Meta Conversion Campaign', openclawRequired: true }
     case 'D6':
-      return { ...base, outputTable: 'proof_sprint_campaign_specs', promptKey: 'p06_meta_leads_campaign', title: 'Meta Leads Campaign', openclawRequired: true }
+      return { ...base, outputTable: 'proof_sprint_campaign_specs', promptKey: 'p06_meta_leads', title: 'Meta Leads Campaign', openclawRequired: true }
     case 'D7':
       return { ...base, outputTable: 'proof_sprint_whatsapp_scripts', promptKey: 'p07_whatsapp_qualifier', title: 'WhatsApp DM Qualifier Script', openclawRequired: false }
     case 'D8':
