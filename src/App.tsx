@@ -1,5 +1,5 @@
 import React from 'react'
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from './lib/toast'
 import { AuthProvider, useAuth } from './lib/auth'
 import { DEFAULT_ROUTE_BY_ROLE } from './lib/route-config'
@@ -29,6 +29,8 @@ import ProofBrand from './pages/ProofBrand'
 import ProofBrandV2 from './pages/ProofBrandV2'
 import AuthorityBrand from './pages/AuthorityBrand'
 import AuthorityBrandV2 from './pages/AuthorityBrandV2'
+import GoogleOAuthStart from './pages/GoogleOAuthStart'
+import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
 import Studio from './pages/Studio'
 import SPOA from './pages/SPOA'
 import SprintDashboard from './pages/SprintDashboard'
@@ -66,8 +68,10 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <HashRouter>
+        <BrowserRouter>
           <Routes>
+            <Route path="/oauth/google/start" element={<GoogleOAuthStart />} />
+            <Route path="/oauth/callback" element={<GoogleOAuthCallback />} />
             <Route path="/login" element={<Login />} />
             <Route path="/portal" element={<RequireAuth><RoleWrapper allowedRoles={['client']}><ClientPortal /></RoleWrapper></RequireAuth>} />
             <Route path="/portal/sprint-dashboard" element={<RequireAuth><RoleWrapper allowedRoles={['client']}><SprintDashboard /></RoleWrapper></RequireAuth>} />
@@ -120,7 +124,7 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </HashRouter>
+        </BrowserRouter>
       </ToastProvider>
     </AuthProvider>
   )

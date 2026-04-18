@@ -57,6 +57,17 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
+### Google Workspace OAuth (edge-function env)
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_REDIRECT_URI=https://app.attractacq.com/oauth/callback`
+- `GOOGLE_OAUTH_STATE_SECRET`
+- `GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY`
+
+Routes:
+- `/oauth/google/start`
+- `/oauth/callback`
+
 ## Local run
 ```bash
 npm install

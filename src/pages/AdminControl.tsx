@@ -21,6 +21,9 @@ export default function AdminControl() {
   // carry it straight into the Section 2 mapping without re-typing.
   const [lastAssignedUUID, setLastAssignedUUID] = useState<string>('');
   const toast = useToast() as any;
+  const launchGoogleOAuth = () => {
+    window.location.assign('/oauth/google/start')
+  }
 
   const fetchData = async () => {
     setLoading(true);
@@ -130,6 +133,13 @@ export default function AdminControl() {
           </h1>
           <p className="text-zinc-500 text-sm font-mono uppercase tracking-tighter">Infrastructure Management</p>
         </div>
+        <button
+          onClick={launchGoogleOAuth}
+          className="px-4 py-2 rounded-lg text-xs font-mono font-semibold uppercase tracking-widest transition-all"
+          style={{ background: 'var(--teal)', color: 'var(--bg)' }}
+        >
+          Connect Gmail OAuth
+        </button>
       </header>
 
       {/* Section 1: User Permissions — managed via JWT user_metadata */}
