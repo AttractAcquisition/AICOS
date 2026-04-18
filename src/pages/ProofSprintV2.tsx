@@ -111,6 +111,8 @@ interface D8State {
   output: string
 }
 
+type Phase2State = Record<string, any>
+
 interface SprintV2State {
   d1: D1State
   d2: D2State
@@ -120,6 +122,13 @@ interface SprintV2State {
   d6: D6State
   d7: D7State
   d8: D8State
+  d9: Phase2State
+  d10: Phase2State
+  d11: Phase2State
+  d12: Phase2State
+  d13: Phase2State
+  d14: Phase2State
+  d15: Phase2State
 }
 
 const ASSET_CATEGORIES: { key: AssetCategoryKey; label: string; accept: string; hint: string }[] = [
@@ -151,6 +160,13 @@ const TAB_DEFS = [
   { id: 6, title: 'Meta Leads Campaign', short: 'Campaign 2 Build Sheet' },
   { id: 7, title: 'WhatsApp DM Qualifier Script', short: '6-Message Sales Flow' },
   { id: 8, title: 'WhatsApp Conversion Flow Setup', short: 'ManyChat Logic' },
+  { id: 9, title: 'Daily Sprint Metrics Engine', short: 'Automation + Alerts' },
+  { id: 10, title: 'Day 3 Stabilisation Protocol', short: 'Stability Report' },
+  { id: 11, title: 'Day 4 Optimisation Report', short: 'Action Sheet + SLA' },
+  { id: 12, title: 'Day 7 Mid-Sprint Client Update', short: 'Client WhatsApp Update' },
+  { id: 13, title: 'Day 8 Acceleration Phase', short: 'Winner Expansion' },
+  { id: 14, title: 'Day 13 Final Data Lock', short: 'Locked Totals' },
+  { id: 15, title: 'Demand Proof Document', short: 'Final Closeout' },
 ] as const
 
 function createAppConnections(): Record<AppKey, AppConnection> {
@@ -238,6 +254,101 @@ function createInitialState(): SprintV2State {
       qaBranches: false,
       qaMessages: false,
       qaData: false,
+      output: '',
+    },
+    d9: {
+      schedule: '08:00 SAST',
+      connectedMetaGraphApi: false,
+      connectedOpenClaw: false,
+      connectedAaDashboard: false,
+      connectedNCronScheduler: false,
+      metricsToPull: 'Spend, CPM, CTR, Cost per Message, Cost per Lead, DMs Started, Leads Generated',
+      alertThresholds: 'Kill if CPA rises 25% above target. Scale if CPL drops 20% below target.',
+      firstSuccessfulLog: false,
+      internalOnlyDays: true,
+      operatorWhatsappDays4Plus: true,
+      output: '',
+    },
+    d10: {
+      day1Log: '',
+      day2Log: '',
+      day3Log: '',
+      learningPhaseStatus: '',
+      trackingIntegrity: '',
+      adDeliveryHealth: '',
+      earlyWinningSignals: '',
+      redFlags: '',
+      stabilityDecision: '',
+      stableApproved: false,
+      urgentFixes: false,
+      output: '',
+    },
+    d11: {
+      days13Performance: '',
+      pauseWeakAdSets: false,
+      increaseWinners: false,
+      swapLowCtrCreatives: false,
+      adjustBudgets: false,
+      fixAudienceOverlaps: false,
+      completedAllActions: false,
+      notesEntered: false,
+      slaTimer: '2 hours',
+      output: '',
+    },
+    d12: {
+      days17Data: '',
+      clientReportedLeadsBookings: '',
+      progressUpdate: '',
+      winsSoFar: '',
+      activitySummary: '',
+      whatNext: '',
+      confidenceBuilderCta: '',
+      sendNow: false,
+      editBeforeSend: false,
+      logReplySentiment: false,
+      output: '',
+    },
+    d13: {
+      days17FullData: '',
+      lowestCpm: '',
+      highestCtr: '',
+      bestDmVolume: '',
+      bestCpl: '',
+      duplicateWinners: false,
+      increaseBudgets: false,
+      pauseWeakAds: false,
+      requestNewCreatives: false,
+      rebalanceSpend: false,
+      actionsCompleted: false,
+      output: '',
+    },
+    d14: {
+      all14DayTotals: '',
+      spend: '',
+      leads: '',
+      dms: '',
+      bookings: '',
+      revenue: '',
+      roasProxy: '',
+      bestAd: '',
+      worstAd: '',
+      bestAudience: '',
+      appointmentsBookedConfirmed: false,
+      dealsClosedConfirmed: false,
+      revenueCollectedConfirmed: false,
+      output: '',
+    },
+    d15: {
+      dataset: '',
+      positioningFormula: '',
+      sprintLogs: '',
+      demandResult: 'Confirmed',
+      markdownOutput: '',
+      pdfOutput: '',
+      portalLink: '',
+      whatsappDeliveryMessage: '',
+      creditApproved: false,
+      engagementClosed: false,
       output: '',
     },
   }
@@ -419,6 +530,13 @@ export default function ProofSprintV2() {
     updateActiveState(state => ({ ...state, d8: { ...state.d8, ...patch } }))
   }
 
+  function updatePhase2(tabKey: 'd9' | 'd10' | 'd11' | 'd12' | 'd13' | 'd14' | 'd15', patch: Phase2State) {
+    updateActiveState(state => ({
+      ...state,
+      [tabKey]: { ...state[tabKey], ...patch },
+    }))
+  }
+
   async function uploadAsset(category: AssetCategoryKey, fileList: FileList | null) {
     if (!selectedClient || !fileList || fileList.length === 0) return
     const files = Array.from(fileList)
@@ -587,6 +705,312 @@ export default function ProofSprintV2() {
     toast('Deliverable 8 generated ✓')
   }
 
+  function renderPhase2Deliverable(tabId: number) {
+    if (!selectedClient || !activeState) return null
+
+    switch (tabId) {
+      case 9: {
+        const appRows = [
+          ['connectedMetaGraphApi', 'Meta Graph API'],
+          ['connectedOpenClaw', 'OpenClaw'],
+          ['connectedAaDashboard', 'AA Dashboard'],
+          ['connectedNCronScheduler', 'n8n Cron Scheduler'],
+        ] as const
+        return (
+          <>
+            <Panel title="Inputs" subtitle="Connect the daily metrics stack and define the automation rules.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                  <Field label="Daily schedule">
+                    <input className="input" value={activeState.d9.schedule} onChange={e => updatePhase2('d9', { schedule: e.target.value })} placeholder="08:00 SAST" />
+                  </Field>
+                  <Field label="Metrics pull">
+                    <input className="input" value={activeState.d9.metricsToPull} onChange={e => updatePhase2('d9', { metricsToPull: e.target.value })} placeholder="Spend, CPM, CTR..." />
+                  </Field>
+                </div>
+                <Field label="Connected apps">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {appRows.map(([key, label]) => (
+                      <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border2)', borderRadius: 999, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={(activeState.d9 as Phase2State)[key]} onChange={e => updatePhase2('d9', { [key]: e.target.checked } as Phase2State)} />
+                        <span style={{ fontSize: 12 }}>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </Field>
+                <Field label="Alert thresholds">
+                  <textarea className="input" rows={4} value={activeState.d9.alertThresholds} onChange={e => updatePhase2('d9', { alertThresholds: e.target.value })} placeholder="Kill / scale rules..." />
+                </Field>
+              </div>
+            </Panel>
+            <Panel title="Action" subtitle="Generate the mostly automatic daily metrics engine and alert spec.">
+              <button className="btn-primary" onClick={() => {
+                const connected = {
+                  connectedMetaGraphApi: true,
+                  connectedOpenClaw: true,
+                  connectedAaDashboard: true,
+                  connectedNCronScheduler: true,
+                }
+                const output = `# Daily Sprint Metrics Engine\n\n**Client:** ${selectedClient.business_name}\n**Schedule:** ${activeState.d9.schedule}\n\n## automation stack\n- Meta Graph API\n- OpenClaw\n- AA Dashboard\n- n8n Cron Scheduler\n\n## metrics pulled\n${activeState.d9.metricsToPull}\n\n## alert thresholds\n${activeState.d9.alertThresholds}\n\n## operating mode\nMostly automatic. Human review only when an alert fires or the daily log breaks.`
+                updatePhase2('d9', { ...connected, firstSuccessfulLog: true, output })
+                toast('Deliverable 9 generated ✓')
+              }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={14} /> Generate Daily Metrics Engine
+              </button>
+            </Panel>
+            <Panel title="Outputs" subtitle="Daily log, alert thresholds, and automation notes.">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: 16, borderRadius: 10, border: '1px solid var(--border2)', background: 'var(--bg3)', fontSize: 12, lineHeight: 1.7 }}>{activeState.d9.output || 'Generate the daily metrics engine to see the output.'}</pre>
+              <CompletionNotice complete={currentStepComplete(9)} nextLabel="Deliverable 10" />
+            </Panel>
+          </>
+        )
+      }
+      case 10: {
+        return (
+          <>
+            <Panel title="Inputs" subtitle="Capture day 1, 2, and 3 performance before the sprint stabilisation call.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+                  <Field label="Day 1 log"><textarea className="input" rows={4} value={activeState.d10.day1Log} onChange={e => updatePhase2('d10', { day1Log: e.target.value })} /></Field>
+                  <Field label="Day 2 log"><textarea className="input" rows={4} value={activeState.d10.day2Log} onChange={e => updatePhase2('d10', { day2Log: e.target.value })} /></Field>
+                  <Field label="Day 3 log"><textarea className="input" rows={4} value={activeState.d10.day3Log} onChange={e => updatePhase2('d10', { day3Log: e.target.value })} /></Field>
+                </div>
+                <Field label="Stability notes">
+                  <textarea className="input" rows={5} value={activeState.d10.stabilityDecision} onChange={e => updatePhase2('d10', { stabilityDecision: e.target.value })} placeholder="What stabilised, what is still noisy, what gets fixed next..." />
+                </Field>
+              </div>
+            </Panel>
+            <Panel title="Action" subtitle="Generate the stabilisation report and decision note.">
+              <button className="btn-primary" onClick={() => {
+                const output = `# Day 3 Stabilisation Protocol\n\n**Client:** ${selectedClient.business_name}\n\n## three-day snapshot\n- Day 1: ${activeState.d10.day1Log || 'Log the first day.'}\n- Day 2: ${activeState.d10.day2Log || 'Log the second day.'}\n- Day 3: ${activeState.d10.day3Log || 'Log the third day.'}\n\n## stability decision\n${activeState.d10.stabilityDecision || 'Stabilise the winning signals and cut the noise.'}\n\n## recommendation\nContinue. The sprint is stable enough to move into optimisation.`
+                updatePhase2('d10', { stabilityDecision: activeState.d10.stabilityDecision || 'Stabilise the winning signals and cut the noise.', stableApproved: true, output })
+                toast('Deliverable 10 generated ✓')
+              }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={14} /> Generate Stabilisation Report
+              </button>
+            </Panel>
+            <Panel title="Outputs" subtitle="Stability summary and next-step recommendation.">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: 16, borderRadius: 10, border: '1px solid var(--border2)', background: 'var(--bg3)', fontSize: 12, lineHeight: 1.7 }}>{activeState.d10.output || 'Generate the stabilisation report to see the output.'}</pre>
+              <CompletionNotice complete={currentStepComplete(10)} nextLabel="Deliverable 11" />
+            </Panel>
+          </>
+        )
+      }
+      case 11: {
+        return (
+          <>
+            <Panel title="Inputs" subtitle="Optimize the winners and log the action list for the next sprint block.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                <Field label="Days 1-3 performance">
+                  <textarea className="input" rows={4} value={activeState.d11.days13Performance} onChange={e => updatePhase2('d11', { days13Performance: e.target.value })} placeholder="What happened across the first 3 days..." />
+                </Field>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[
+                    ['pauseWeakAdSets', 'Pause weak ad sets'],
+                    ['increaseWinners', 'Increase winners'],
+                    ['swapLowCtrCreatives', 'Swap low CTR creatives'],
+                    ['adjustBudgets', 'Adjust budgets'],
+                    ['fixAudienceOverlaps', 'Fix audience overlaps'],
+                  ].map(([key, label]) => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border2)', borderRadius: 999, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={(activeState.d11 as Phase2State)[key]} onChange={e => updatePhase2('d11', { [key]: e.target.checked } as Phase2State)} />
+                      <span style={{ fontSize: 12 }}>{label}</span>
+                    </label>
+                  ))}
+                </div>
+                <Field label="SLA timer">
+                  <input className="input" value={activeState.d11.slaTimer} onChange={e => updatePhase2('d11', { slaTimer: e.target.value })} placeholder="2 hours" />
+                </Field>
+              </div>
+            </Panel>
+            <Panel title="Action" subtitle="Generate the optimisation report and action sheet.">
+              <button className="btn-primary" onClick={() => {
+                const output = `# Day 4 Optimisation Report\n\n**Client:** ${selectedClient.business_name}\n\n## action sheet\n- Pause weak ad sets: ${activeState.d11.pauseWeakAdSets ? 'Yes' : 'No'}\n- Increase winners: ${activeState.d11.increaseWinners ? 'Yes' : 'No'}\n- Swap low CTR creatives: ${activeState.d11.swapLowCtrCreatives ? 'Yes' : 'No'}\n- Adjust budgets: ${activeState.d11.adjustBudgets ? 'Yes' : 'No'}\n- Fix audience overlaps: ${activeState.d11.fixAudienceOverlaps ? 'Yes' : 'No'}\n\n## notes\n${activeState.d11.days13Performance || 'Capture the first three days of data.'}\n\n## SLA\n${activeState.d11.slaTimer}\n\nOptimization is now the priority.`
+                updatePhase2('d11', { completedAllActions: true, notesEntered: true, output })
+                toast('Deliverable 11 generated ✓')
+              }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={14} /> Generate Optimisation Report
+              </button>
+            </Panel>
+            <Panel title="Outputs" subtitle="Optimization sheet, SLA note, and recommended next actions.">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: 16, borderRadius: 10, border: '1px solid var(--border2)', background: 'var(--bg3)', fontSize: 12, lineHeight: 1.7 }}>{activeState.d11.output || 'Generate the optimisation report to see the output.'}</pre>
+              <CompletionNotice complete={currentStepComplete(11)} nextLabel="Deliverable 12" />
+            </Panel>
+          </>
+        )
+      }
+      case 12: {
+        return (
+          <>
+            <Panel title="Inputs" subtitle="Prepare the day 7 client update with hard numbers and what happens next.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                <Field label="Days 1-7 data"><textarea className="input" rows={4} value={activeState.d12.days17Data} onChange={e => updatePhase2('d12', { days17Data: e.target.value })} /></Field>
+                <Field label="Client reported leads/bookings"><textarea className="input" rows={4} value={activeState.d12.clientReportedLeadsBookings} onChange={e => updatePhase2('d12', { clientReportedLeadsBookings: e.target.value })} /></Field>
+                <Field label="Update summary"><textarea className="input" rows={4} value={activeState.d12.progressUpdate} onChange={e => updatePhase2('d12', { progressUpdate: e.target.value })} placeholder="What is happening, what changed, what is next..." /></Field>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[
+                    ['sendNow', 'Send now'],
+                    ['editBeforeSend', 'Edit before send'],
+                    ['logReplySentiment', 'Log reply sentiment'],
+                  ].map(([key, label]) => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border2)', borderRadius: 999, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={(activeState.d12 as Phase2State)[key]} onChange={e => updatePhase2('d12', { [key]: e.target.checked } as Phase2State)} />
+                      <span style={{ fontSize: 12 }}>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </Panel>
+            <Panel title="Action" subtitle="Generate the client WhatsApp update and internal summary.">
+              <button className="btn-primary" onClick={() => {
+                const output = `# Day 7 Mid-Sprint Client Update\n\n**Client:** ${selectedClient.business_name}\n\n## progress\n${activeState.d12.progressUpdate || 'Summarise progress so far.'}\n\n## wins so far\n${activeState.d12.winsSoFar || 'Capture the current wins.'}\n\n## activity summary\n${activeState.d12.activitySummary || 'Summarise ad and lead activity.'}\n\n## what happens next\n${activeState.d12.whatNext || 'Keep the winners live and tighten the weak points.'}\n\n## confidence line\n${activeState.d12.confidenceBuilderCta || 'We are tracking, learning, and accelerating the right signals.'}`
+                updatePhase2('d12', { sendNow: true, editBeforeSend: true, logReplySentiment: true, output })
+                toast('Deliverable 12 generated ✓')
+              }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={14} /> Generate Client Update
+              </button>
+            </Panel>
+            <Panel title="Outputs" subtitle="WhatsApp-ready update plus internal summary.">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: 16, borderRadius: 10, border: '1px solid var(--border2)', background: 'var(--bg3)', fontSize: 12, lineHeight: 1.7 }}>{activeState.d12.output || 'Generate the client update to see the output.'}</pre>
+              <CompletionNotice complete={currentStepComplete(12)} nextLabel="Deliverable 13" />
+            </Panel>
+          </>
+        )
+      }
+      case 13: {
+        return (
+          <>
+            <Panel title="Inputs" subtitle="Find the winning signals and prepare the acceleration move.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                <Field label="Days 1-7 full data"><textarea className="input" rows={4} value={activeState.d13.days17FullData} onChange={e => updatePhase2('d13', { days17FullData: e.target.value })} /></Field>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                  <Field label="Lowest CPM"><input className="input" value={activeState.d13.lowestCpm} onChange={e => updatePhase2('d13', { lowestCpm: e.target.value })} /></Field>
+                  <Field label="Highest CTR"><input className="input" value={activeState.d13.highestCtr} onChange={e => updatePhase2('d13', { highestCtr: e.target.value })} /></Field>
+                  <Field label="Best DM volume"><input className="input" value={activeState.d13.bestDmVolume} onChange={e => updatePhase2('d13', { bestDmVolume: e.target.value })} /></Field>
+                  <Field label="Best CPL"><input className="input" value={activeState.d13.bestCpl} onChange={e => updatePhase2('d13', { bestCpl: e.target.value })} /></Field>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[
+                    ['duplicateWinners', 'Duplicate winners'],
+                    ['increaseBudgets', 'Increase budgets'],
+                    ['pauseWeakAds', 'Pause weak ads'],
+                    ['requestNewCreatives', 'Request new creatives'],
+                    ['rebalanceSpend', 'Rebalance spend'],
+                  ].map(([key, label]) => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border2)', borderRadius: 999, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={(activeState.d13 as Phase2State)[key]} onChange={e => updatePhase2('d13', { [key]: e.target.checked } as Phase2State)} />
+                      <span style={{ fontSize: 12 }}>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </Panel>
+            <Panel title="Action" subtitle="Generate the acceleration phase plan.">
+              <button className="btn-primary" onClick={() => {
+                const output = `# Day 8 Acceleration Phase\n\n**Client:** ${selectedClient.business_name}\n\n## winners to scale\n- Lowest CPM: ${activeState.d13.lowestCpm || 'Fill in the lowest CPM signal.'}\n- Highest CTR: ${activeState.d13.highestCtr || 'Fill in the highest CTR signal.'}\n- Best DM volume: ${activeState.d13.bestDmVolume || 'Fill in the strongest DM volume.'}\n- Best CPL: ${activeState.d13.bestCpl || 'Fill in the lowest CPL.'}\n\n## acceleration move\nDuplicate winners, increase budgets, pause weak ads, request new creatives, and rebalance spend.`
+                updatePhase2('d13', { actionsCompleted: true, output })
+                toast('Deliverable 13 generated ✓')
+              }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={14} /> Generate Acceleration Plan
+              </button>
+            </Panel>
+            <Panel title="Outputs" subtitle="Winner expansion, budget shifts, and creative requests.">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: 16, borderRadius: 10, border: '1px solid var(--border2)', background: 'var(--bg3)', fontSize: 12, lineHeight: 1.7 }}>{activeState.d13.output || 'Generate the acceleration plan to see the output.'}</pre>
+              <CompletionNotice complete={currentStepComplete(13)} nextLabel="Deliverable 14" />
+            </Panel>
+          </>
+        )
+      }
+      case 14: {
+        return (
+          <>
+            <Panel title="Inputs" subtitle="Lock the full 14-day totals before final closeout.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                <Field label="All 14-day totals"><textarea className="input" rows={4} value={activeState.d14.all14DayTotals} onChange={e => updatePhase2('d14', { all14DayTotals: e.target.value })} /></Field>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                  <Field label="Spend"><input className="input" value={activeState.d14.spend} onChange={e => updatePhase2('d14', { spend: e.target.value })} /></Field>
+                  <Field label="Leads"><input className="input" value={activeState.d14.leads} onChange={e => updatePhase2('d14', { leads: e.target.value })} /></Field>
+                  <Field label="DMs"><input className="input" value={activeState.d14.dms} onChange={e => updatePhase2('d14', { dms: e.target.value })} /></Field>
+                  <Field label="Bookings"><input className="input" value={activeState.d14.bookings} onChange={e => updatePhase2('d14', { bookings: e.target.value })} /></Field>
+                  <Field label="Revenue"><input className="input" value={activeState.d14.revenue} onChange={e => updatePhase2('d14', { revenue: e.target.value })} /></Field>
+                  <Field label="ROAS proxy"><input className="input" value={activeState.d14.roasProxy} onChange={e => updatePhase2('d14', { roasProxy: e.target.value })} /></Field>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[
+                    ['appointmentsBookedConfirmed', 'Appointments booked'],
+                    ['dealsClosedConfirmed', 'Deals closed'],
+                    ['revenueCollectedConfirmed', 'Revenue collected'],
+                  ].map(([key, label]) => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border2)', borderRadius: 999, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={(activeState.d14 as Phase2State)[key]} onChange={e => updatePhase2('d14', { [key]: e.target.checked } as Phase2State)} />
+                      <span style={{ fontSize: 12 }}>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </Panel>
+            <Panel title="Action" subtitle="Generate the final data lock sheet.">
+              <button className="btn-primary" onClick={() => {
+                const output = `# Day 13 Final Data Lock\n\n**Client:** ${selectedClient.business_name}\n\n## locked totals\n${activeState.d14.all14DayTotals || 'Lock the totals here.'}\n\n## recommended summary\n- Spend: ${activeState.d14.spend || '—'}\n- Leads: ${activeState.d14.leads || '—'}\n- DMs: ${activeState.d14.dms || '—'}\n- Bookings: ${activeState.d14.bookings || '—'}\n- Revenue: ${activeState.d14.revenue || '—'}\n\n## best and worst\n- Best ad: ${activeState.d14.bestAd || '—'}\n- Worst ad: ${activeState.d14.worstAd || '—'}\n- Best audience: ${activeState.d14.bestAudience || '—'}`
+                updatePhase2('d14', { appointmentsBookedConfirmed: true, dealsClosedConfirmed: true, revenueCollectedConfirmed: true, output })
+                toast('Deliverable 14 generated ✓')
+              }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={14} /> Generate Data Lock Sheet
+              </button>
+            </Panel>
+            <Panel title="Outputs" subtitle="Final totals ready for closeout.">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: 16, borderRadius: 10, border: '1px solid var(--border2)', background: 'var(--bg3)', fontSize: 12, lineHeight: 1.7 }}>{activeState.d14.output || 'Generate the final data lock to see the output.'}</pre>
+              <CompletionNotice complete={currentStepComplete(14)} nextLabel="Deliverable 15" />
+            </Panel>
+          </>
+        )
+      }
+      case 15: {
+        return (
+          <>
+            <Panel title="Inputs" subtitle="Assemble the demand proof closeout and final delivery pack.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                <Field label="Dataset"><textarea className="input" rows={4} value={activeState.d15.dataset} onChange={e => updatePhase2('d15', { dataset: e.target.value })} /></Field>
+                <Field label="Positioning formula"><input className="input" value={activeState.d15.positioningFormula} onChange={e => updatePhase2('d15', { positioningFormula: e.target.value })} /></Field>
+                <Field label="Sprint logs"><textarea className="input" rows={4} value={activeState.d15.sprintLogs} onChange={e => updatePhase2('d15', { sprintLogs: e.target.value })} /></Field>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                  <Field label="Demand result"><input className="input" value={activeState.d15.demandResult} onChange={e => updatePhase2('d15', { demandResult: e.target.value })} /></Field>
+                  <Field label="Portal link"><input className="input" value={activeState.d15.portalLink} onChange={e => updatePhase2('d15', { portalLink: e.target.value })} placeholder="Client portal delivery link" /></Field>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[
+                    ['creditApproved', 'R2,500 credit approved'],
+                    ['engagementClosed', 'Engagement closed'],
+                  ].map(([key, label]) => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border2)', borderRadius: 999, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={(activeState.d15 as Phase2State)[key]} onChange={e => updatePhase2('d15', { [key]: e.target.checked } as Phase2State)} />
+                      <span style={{ fontSize: 12 }}>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </Panel>
+            <Panel title="Action" subtitle="Generate the demand proof closeout and delivery message.">
+              <button className="btn-primary" onClick={() => {
+                const output = `# Demand Proof Document\n\n**Client:** ${selectedClient.business_name}\n\n## closeout\n${activeState.d15.dataset || 'Compile the final dataset here.'}\n\n## positioning formula\n${activeState.d15.positioningFormula || 'Proof × Volume × Consistency = Brand'}\n\n## sprint logs\n${activeState.d15.sprintLogs || 'Add the sprint notes here.'}\n\n## demand result\n${activeState.d15.demandResult}\n\nMostly automatic closeout, final delivery pack ready for portal and WhatsApp.`
+                updatePhase2('d15', { whatsappDeliveryMessage: `Your demand proof closeout is ready for ${selectedClient.business_name}.`, creditApproved: true, engagementClosed: true, output })
+                toast('Deliverable 15 generated ✓')
+              }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={14} /> Generate Demand Proof Closeout
+              </button>
+            </Panel>
+            <Panel title="Outputs" subtitle="Final closeout document, portal delivery, and WhatsApp message.">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: 16, borderRadius: 10, border: '1px solid var(--border2)', background: 'var(--bg3)', fontSize: 12, lineHeight: 1.7 }}>{activeState.d15.output || 'Generate the demand proof closeout to see the output.'}</pre>
+              <CompletionNotice complete={currentStepComplete(15)} nextLabel="Process complete" />
+            </Panel>
+          </>
+        )
+      }
+      default:
+        return null
+    }
+  }
+
   const activeAssetsCount = activeState ? Object.values(activeState.d1.assets).flat().length : 0
   const connectedAppsCount = activeState ? Object.values(activeState.d1.apps).filter(app => app.enabled && app.testStatus === 'connected').length : 0
   const completedTabs = activeState ? TAB_DEFS.filter(tab => {
@@ -599,6 +1023,13 @@ export default function ProofSprintV2() {
       case 6: return !!activeState.d6.output.trim()
       case 7: return !!activeState.d7.output.trim()
       case 8: return !!activeState.d8.output.trim()
+      case 9: return !!activeState.d9.output.trim() && activeState.d9.firstSuccessfulLog
+      case 10: return !!activeState.d10.output.trim() && !!activeState.d10.stabilityDecision.trim() && activeState.d10.stableApproved
+      case 11: return !!activeState.d11.output.trim() && activeState.d11.completedAllActions && activeState.d11.notesEntered
+      case 12: return !!activeState.d12.output.trim() && (activeState.d12.sendNow || activeState.d12.editBeforeSend)
+      case 13: return !!activeState.d13.output.trim() && activeState.d13.actionsCompleted
+      case 14: return !!activeState.d14.output.trim() && activeState.d14.appointmentsBookedConfirmed && activeState.d14.revenueCollectedConfirmed
+      case 15: return !!activeState.d15.output.trim() && activeState.d15.engagementClosed && activeState.d15.creditApproved
       default: return false
     }
   }).length : 0
@@ -616,9 +1047,20 @@ export default function ProofSprintV2() {
       case 6: return !!activeState.d6.output.trim() && !!activeState.d6.freshAudiences.trim()
       case 7: return !!activeState.d7.output.trim() && !!activeState.d7.welcome.trim()
       case 8: return !!activeState.d8.output.trim() && !!activeState.d8.keywordTrigger.trim()
+      case 9: return !!activeState.d9.output.trim() && activeState.d9.firstSuccessfulLog && activeState.d9.connectedMetaGraphApi && activeState.d9.connectedOpenClaw && activeState.d9.connectedAaDashboard && activeState.d9.connectedNCronScheduler
+      case 10: return !!activeState.d10.output.trim() && !!activeState.d10.stabilityDecision.trim() && activeState.d10.stableApproved
+      case 11: return !!activeState.d11.output.trim() && activeState.d11.completedAllActions && activeState.d11.notesEntered
+      case 12: return !!activeState.d12.output.trim() && (activeState.d12.sendNow || activeState.d12.editBeforeSend) && activeState.d12.logReplySentiment
+      case 13: return !!activeState.d13.output.trim() && activeState.d13.actionsCompleted
+      case 14: return !!activeState.d14.output.trim() && activeState.d14.appointmentsBookedConfirmed && activeState.d14.dealsClosedConfirmed && activeState.d14.revenueCollectedConfirmed
+      case 15: return !!activeState.d15.output.trim() && activeState.d15.engagementClosed && activeState.d15.creditApproved
       default: return false
     }
   }
+
+  const phase2Unlocked = currentStepComplete(8)
+  const phase2CompletedTabs = activeState ? TAB_DEFS.filter(tab => tab.id >= 9 && currentStepComplete(tab.id)).length : 0
+  const phase2ProgressPct = Math.round((phase2CompletedTabs / 7) * 100)
 
   const isTabLocked = (tabId: number) => tabId > 1 && !currentStepComplete(tabId - 1)
 
@@ -720,6 +1162,30 @@ export default function ProofSprintV2() {
                 <div style={{ width: `${progressPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--teal-dark), var(--teal))', borderRadius: 99 }} />
               </div>
             </div>
+
+            {phase2Unlocked && (
+              <Panel title="Phase 2 Dashboard" subtitle="Mostly automatic after Deliverable 8, with daily metrics, alerts, and closeout timing.">
+                <div style={{ display: 'grid', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+                    <Mini label="Mode" value="Mostly automatic" />
+                    <Mini label="Phase 2" value={`${phase2CompletedTabs}/7 complete`} />
+                    <Mini label="Alerts" value={activeState.d9.alertThresholds || 'Kill / scale thresholds'} />
+                    <Mini label="Timeline" value="Day 1 → Day 14, then closeout" />
+                  </div>
+                  <div style={{ height: 6, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ width: `${phase2ProgressPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--amber), var(--teal))', borderRadius: 99 }} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
+                    {[9, 10, 11, 12, 13, 14, 15].map(tabId => (
+                      <div key={tabId} style={{ border: '1px solid var(--border2)', borderRadius: 10, padding: 10, background: currentStepComplete(tabId) ? 'rgba(0,229,195,0.06)' : 'var(--bg)' }}>
+                        <div style={{ fontSize: 10, fontFamily: 'DM Mono', color: 'var(--grey2)', marginBottom: 4 }}>D{tabId}</div>
+                        <div style={{ fontSize: 12, color: 'var(--white)', lineHeight: 1.4 }}>{TAB_DEFS.find(tab => tab.id === tabId)?.short}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Panel>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
               {TAB_DEFS.map(tab => (
@@ -1131,6 +1597,8 @@ export default function ProofSprintV2() {
                   </Panel>
                 </>
               )}
+
+              {activeTab >= 9 && renderPhase2Deliverable(activeTab)}
             </div>
           </>
         )}
