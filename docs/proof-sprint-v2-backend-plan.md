@@ -12,7 +12,7 @@ The system must:
 - keep the front end as the operator control panel, not the source of truth
 
 ## 2) Core architecture
-Use three layers:
+Use four layers:
 
 1. **Presentation layer**
    - `src/pages/ProofSprintV2.tsx`
@@ -23,10 +23,15 @@ Use three layers:
 2. **Orchestration layer**
    - Supabase Edge Functions
    - prompt template registry
-   - OpenClaw job dispatch for cron / external actions
-   - OpenAI calls for all generated content
+   - OpenAI calls for text generation and structured drafting
+   - Telegram dispatch for OpenClaw agent activation
 
-3. **Persistence layer**
+3. **Agent execution layer**
+   - Telegram is the transport, not the executor
+   - every "send to Telegram" event creates an OpenClaw agent workflow
+   - the OpenClaw agent reads the prompt, uses connected APIs, executes the task, and returns artifacts back through Telegram
+
+4. **Persistence layer**
    - client input tables
    - deliverable output tables
    - artifact buckets
@@ -47,6 +52,8 @@ Use three layers:
 - All external actions must be idempotent
 - The UI should always be reconstructable from Supabase state alone
 - If a run fails, it must be retryable without duplicating side effects
+- If a deliverable uses Telegram as its outbound handoff, create and persist an OpenClaw agent job first, then send the Telegram activation message, then ingest the returned artifacts and receipts
+- The returned agent payload is the execution result, not the outbound Telegram message itself
 
 ## 4) Current Proof Sprint V2 front-end map
 The page is already structured as 15 operator tabs. Backend work should map to them as follows:
@@ -131,8 +138,11 @@ Create logging tables for observability and retries:
 - `proof_sprints_content_logs`
 - `proof_sprints_alert_events`
 - `proof_sprints_external_receipts`
+- `proof_sprints_agent_jobs`
+- `proof_sprints_agent_events`
+- `proof_sprints_agent_artifacts`
 
-These should capture provider payloads, Telegram responses, Meta / WhatsApp receipts, and cron run metadata.
+These should capture provider payloads, Telegram activation messages, OpenClaw job ids, Meta / WhatsApp receipts, and cron run metadata.
 
 ## 6) Storage buckets
 Use buckets deliberately:
@@ -212,6 +222,11 @@ Every function should:
 8. create a run log row
 9. return the latest output to the UI
 
+If the function needs to trigger real execution in a connected app, it must also:
+10. create an OpenClaw agent job row
+11. send the activation prompt through Telegram to the OpenClaw agent
+12. ingest the agent return payload, receipts, and downloaded artifacts back into Supabase
+
 ## 9) Deliverable-by-deliverable implementation map
 
 ### D1, Tools, Information & Assets
@@ -242,10 +257,12 @@ Backend steps:
 - combine with Prompt 02
 - generate the copy variants with OpenAI
 - save copy to `proof_sprint_proof_ads`
-- send the copy plus before / after images to Telegram
-- capture Telegram response ids, returned file ids, and any generated media
+- create an OpenClaw agent job that is activated through Telegram
+- send the copy plus before / after images plus the AdCreative.ai execution prompt to Telegram
+- instruct the agent to use the connected AdCreative.ai app/API to build the before / after post variants
+- capture Telegram response ids, OpenClaw job ids, returned file ids, and any generated media
 - store returned media in `proof_sprints_content`
-- log the entire delivery payload and response
+- log the full agent payload, provider output, and response chain
 
 UI behavior:
 - let the operator select source assets
@@ -290,6 +307,9 @@ Backend steps:
 - generate the campaign structure
 - save to `proof_sprint_campaign_specs`
 - store ad set targeting, exclusions, budgets, keyword trigger, and approval notes
+- create an OpenClaw agent job through Telegram that uses the Meta Ads API to build Campaign 1
+- pass the D2 creative assets into the job so the agent can attach the before / after variants at ad level
+- save the Meta build receipts, object ids, and ad ids to the logging tables
 
 ### D6, Meta Leads Campaign
 Purpose:
@@ -301,6 +321,8 @@ Backend steps:
 - generate the leads campaign build sheet
 - save to the same campaign table or a dedicated `proof_sprint_leads_campaign_specs`
 - store audience split, lead form spec, and budget guidance
+- create the matching OpenClaw agent job through Telegram so the agent can build the leads objective version in Meta Ads API
+- reuse the same D2 asset pool where required, but map to the leads campaign objective instead of conversion
 
 ### D7, WhatsApp DM Qualifier Script
 Purpose:
@@ -335,6 +357,7 @@ Backend steps:
 - write a daily row to `proof_sprint_daily_metrics`
 - evaluate kill / scale thresholds
 - create alerts in `proof_sprints_alert_events`
+- if threshold action is needed, dispatch a Telegram activation message to an OpenClaw agent so it can create or update the cron workflow, then return the new run receipt
 - send alerts to WhatsApp / Telegram only when thresholds are breached
 - keep Days 1-3 as stabilisation-only review mode
 
@@ -348,6 +371,7 @@ Backend steps:
 - generate the stabilisation report with Prompt 10
 - save to `proof_sprint_stabilisation_reports`
 - mark whether the sprint is stable enough to continue
+- if the agent needs to take stabilisation actions, dispatch those through Telegram so OpenClaw can act on the connected app stack
 - surface critical flags to the operator in the UI
 
 ### D11, Day 4 Optimisation Report and Day 8 Acceleration
@@ -362,6 +386,7 @@ Backend steps:
 - Day 8 run uses Days 1-7 cumulative data and Prompt 11b
 - save both outputs to `proof_sprint_optimisation_reports`
 - log the action list the operator must execute in Meta Ads Manager
+- if auto-execution is enabled, push the kill / scale or acceleration action set to an OpenClaw agent through Telegram so it can apply the changes via Meta Ads API
 
 ### D12, Day 7 Mid-Sprint Client Update
 Purpose:
@@ -371,7 +396,7 @@ Backend steps:
 - run on Day 7 after the daily metrics job
 - pull cumulative data and client-reported leads / bookings
 - generate the WhatsApp update with Prompt 12
-- send to the client via WhatsApp Business API
+- create an OpenClaw agent job through Telegram so the agent sends the WhatsApp update via WhatsApp Business API
 - store message content and delivery receipt in `proof_sprints_delivery_runs`
 - save the internal summary to `proof_sprint_client_updates`
 
@@ -385,6 +410,7 @@ Backend steps:
 - aggregate totals, averages, booking rates, and revenue-to-spend ratio
 - save the locked dataset to `proof_sprint_final_data_locks`
 - mark the data as immutable unless an admin override occurs
+- if the data lock requires downstream delivery, hand the locked dataset to an OpenClaw agent through Telegram so the final report chain can start immediately
 
 ### D14, Demand Proof Document
 Purpose:
@@ -396,7 +422,7 @@ Backend steps:
 - generate the markdown and PDF
 - save to `proof_sprint_demand_proof_documents`
 - upload PDF to `proof_sprints_content`
-- deliver the portal link and WhatsApp summary to the client
+- create an OpenClaw agent job through Telegram so the agent delivers the portal link and WhatsApp summary
 - if demand is confirmed, create the credit confirmation record
 
 ### D15, Closeout Layer if the UI keeps it
@@ -405,6 +431,7 @@ Purpose:
 
 Backend steps:
 - if the app keeps D15 as a separate tab, treat it as a closeout state
+- if Telegram is used for the closeout handoff, it should activate an OpenClaw agent workflow, not a manual message flow
 - store closeout metadata in a lightweight `proof_sprint_closeouts` table
 - record whether the engagement is closed, credit confirmed, and handoff completed
 - if the product team later merges D15 into D14, this table can be removed without changing the workflow logic
@@ -428,14 +455,27 @@ Every output panel should load the latest persisted markdown from the database.
 - use `gpt-5.4` for heavy synthesis, final closeout docs, or difficult prompt chains
 
 ### Telegram
-- use Telegram for the D2 asset delivery path
+- use Telegram as the outbound activation channel for OpenClaw agent workflows
 - store every message id and file id returned by the API
-- treat Telegram responses as delivery receipts
+- treat Telegram responses as delivery receipts and agent handoff markers
 
 ### OpenClaw
-- use OpenClaw as the automation worker for cron-triggered tasks
-- dispatch jobs with the client id, deliverable key, prompt key, and callback route
+- use OpenClaw as the automation worker for cron-triggered and app-execution tasks
+- dispatch jobs with the client id, deliverable key, prompt key, required apps, and callback route
 - keep OpenClaw jobs idempotent and resumable
+- treat Telegram messages as the job transport into OpenClaw, not the final business action itself
+
+### Telegram → OpenClaw job contract
+- every execution message should include:
+  - `client_id`
+  - `deliverable_key`
+  - `prompt_key`
+  - `input_artifact_paths`
+  - `required_apps`
+  - `expected_output_type`
+  - `callback_target`
+- the OpenClaw agent executes the task, uses the connected APIs, and returns artifact links plus receipts
+- Supabase is updated only after the return payload is received or the job is marked failed
 
 ### Meta / WhatsApp / ManyChat
 - read from the same saved client state and prompt registry
