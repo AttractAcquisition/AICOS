@@ -30,7 +30,7 @@ const MODULES = [
   {
     title: 'Proof Sprint V2',
     path: '/delivery/sprints-v2',
-    description: 'Blank tracker variant for the sprint workflow.',
+    description: 'Tab-based deliverables flow for the new Proof Sprint front-end.',
     icon: Layers3,
   },
   {
