@@ -7,6 +7,7 @@ import { useToast } from '../lib/toast'
 
 type AssetCategoryKey = 'beforePhotos' | 'afterPhotos' | 'logos' | 'brandFiles' | 'testimonials' | 'pdfs'
 type AppKey = 'apify' | 'adCreative' | 'metaAds' | 'metaGraph' | 'whatsappBusiness' | 'manyChat' | 'supabase' | 'github'
+type ProofSprintDeliverableKey = 'D1' | 'D2' | 'D3' | 'D4' | 'D5' | 'D6' | 'D7' | 'D8' | 'D9' | 'D10' | 'D11' | 'D12' | 'D13' | 'D14' | 'D15'
 
 type AppTestStatus = 'idle' | 'connected' | 'missing'
 
@@ -537,6 +538,24 @@ export default function ProofSprintV2() {
     }))
   }
 
+  async function persistProofSprintDeliverable(deliverableKey: ProofSprintDeliverableKey) {
+    if (!selectedClient || !activeState) return null
+    const { data, error } = await supabase.functions.invoke('proof-sprint-run-deliverable', {
+      body: {
+        client_id: selectedClient.id,
+        deliverable_key: deliverableKey,
+        input_json: activeState,
+      },
+    })
+
+    if (error) {
+      toast(`Backend sync failed for ${deliverableKey}: ${error.message}`, 'error')
+      return null
+    }
+
+    return data
+  }
+
   async function uploadAsset(category: AssetCategoryKey, fileList: FileList | null) {
     if (!selectedClient || !fileList || fileList.length === 0) return
     const files = Array.from(fileList)
@@ -598,7 +617,7 @@ export default function ProofSprintV2() {
     toast(`${APP_DEFS.find(a => a.key === appKey)?.label} test passed ✓`)
   }
 
-  function generateD1() {
+  async function generateD1() {
     if (!selectedClient || !activeState) return
     const transcript = activeState.d1.transcript.trim()
     const assetCount = Object.values(activeState.d1.assets).flat().length
@@ -627,10 +646,11 @@ export default function ProofSprintV2() {
       dominantFormula,
       output,
     })
+    await persistProofSprintDeliverable('D1')
     toast('Deliverable 1 generated ✓')
   }
 
-  function generateD2() {
+  async function generateD2() {
     if (!selectedClient || !activeState) return
     const topObjection = activeState.d2.topObjection.trim() || 'I need to think about it'
     const formula = activeState.d1.dominantFormula || 'Proof × Volume × Consistency = Brand'
@@ -642,10 +662,11 @@ export default function ProofSprintV2() {
       output,
       exportLabels: ['B/A-C1', 'B/A-C2', 'B/A-C4'],
     })
+    await persistProofSprintDeliverable('D2')
     toast('Deliverable 2 generated ✓')
   }
 
-  function generateD3() {
+  async function generateD3() {
     if (!selectedClient || !activeState) return
     const colors = activeState.d3.brandColors.trim() || '#6A00F4, #9D4BFF, #EBD7FF'
     const formula = activeState.d1.dominantFormula || 'Proof × Volume × Consistency = Brand'
@@ -666,42 +687,48 @@ export default function ProofSprintV2() {
     const output = `# Ad Variants\n\n**D1 formula:** ${formula}\n**Brand colors:** ${colors}\n\n## pain based ads x2\n- ${pain[0]}\n- ${pain[1]}\n\n## outcome based ads x2\n- ${outcome[0]}\n- ${outcome[1]}\n\n## offer based ads x2\n- ${offer[0]}\n- ${offer[1]}\n\n## integration\nPush these prompts into AdCreative.ai and label exports by campaign usage.\n\n## download labels\n- Pain-01\n- Pain-02\n- Outcome-01\n- Outcome-02\n- Offer-01\n- Offer-02\n`
 
     updateD3({ output, downloadLabels: ['Pain-01', 'Pain-02', 'Outcome-01', 'Outcome-02', 'Offer-01', 'Offer-02'] })
+    await persistProofSprintDeliverable('D3')
     toast('Deliverable 3 generated ✓')
   }
 
-  function generateD4() {
+  async function generateD4() {
     if (!selectedClient || !activeState) return
     const guideTopic = pickLeadMagnetTopic(activeState.d4.vertical)
     const output = `# Lead Magnet\n\n**Guide topic:** ${guideTopic}\n\n## full pdf copy\n${activeState.d4.pdfCopy || `Write the full PDF copy for ${guideTopic}.`}\n\n## cta\n${activeState.d4.cta || 'Book the next step on WhatsApp.'}\n\n## meta instant form fields\n${activeState.d4.formFields || '- Name\n- Phone\n- Service needed\n- Urgency\n- Area'}\n`
     updateD4({ guideTopic, output })
+    await persistProofSprintDeliverable('D4')
     toast('Deliverable 4 generated ✓')
   }
 
-  function generateD5() {
+  async function generateD5() {
     if (!selectedClient || !activeState) return
     const output = `# Meta Conversion Campaign Spec\n\n**Client:** ${selectedClient.business_name}\n\n## targeting\n${activeState.d5.targeting || 'Local radius + strong intent signals'}\n\n## age ranges\n${activeState.d5.ageRanges || '25-55'}\n\n## exclusions\n${activeState.d5.exclusions || 'Non-buyers, competitors, irrelevant job seekers'}\n\n## budgets\n${activeState.d5.budget || 'Split by ad set and scale winners only'}\n\n## keyword trigger\n${activeState.d5.keywordTrigger || 'Use a frictionless keyword trigger in WhatsApp'}\n\n## campaign 1 build sheet\nAd sets: Broad, Interest, Warm, Lookalike\n`
     updateD5({ output })
+    await persistProofSprintDeliverable('D5')
     toast('Deliverable 5 generated ✓')
   }
 
-  function generateD6() {
+  async function generateD6() {
     if (!selectedClient || !activeState) return
     const output = `# Meta Leads Campaign Spec\n\n**Client:** ${selectedClient.business_name}\n\n## fresh audiences\n${activeState.d6.freshAudiences || 'New audience expansion pool'}\n\n## non converters\n${activeState.d6.nonConverters || 'People who engaged but did not convert'}\n\n## lookalike 3–5%\n${activeState.d6.lookalike || 'Scale the best converting signals'}\n\n## lead form setup\n${activeState.d6.leadFormSetup || 'Name, phone, service interest, urgency, suburb'}\n\n## budgets\n${activeState.d6.budget || 'Test with a controlled budget and scale the winners'}\n`
     updateD6({ output })
+    await persistProofSprintDeliverable('D6')
     toast('Deliverable 6 generated ✓')
   }
 
-  function generateD7() {
+  async function generateD7() {
     if (!selectedClient || !activeState) return
     const output = `# WhatsApp DM Qualifier Script\n\n**Client:** ${selectedClient.business_name}\n\n## 6 message sales flow\n1. Welcome: ${activeState.d7.welcome || 'Thanks for reaching out. What do you need help with?'}\n2. Job type: ${activeState.d7.jobType || 'What type of work is it?'}\n3. Urgency: ${activeState.d7.urgency || 'How soon do you want this sorted?'}\n4. Area: ${activeState.d7.area || 'Which area are you in?'}\n5. Price bridge: ${activeState.d7.priceBridge || 'Here is the value bridge before we talk price.'}\n6. Booking close: ${activeState.d7.bookingClose || 'Let’s lock the booking in.'}\n\n## objection handler\n${activeState.d7.objectionHandler || 'Handle the common objection and return to the booking.'}\n\n## tyre kicker exit\n${activeState.d7.tyreKickerExit || 'Polite exit for non-serious enquiries.'}\n`
     updateD7({ output })
+    await persistProofSprintDeliverable('D7')
     toast('Deliverable 7 generated ✓')
   }
 
-  function generateD8() {
+  async function generateD8() {
     if (!selectedClient || !activeState) return
     const output = `# WhatsApp Conversion Flow Setup\n\n**Client:** ${selectedClient.business_name}\n\n## ManyChat logic builder\n- Keyword trigger: ${activeState.d8.keywordTrigger || activeState.d5.keywordTrigger || 'Use the campaign keyword from D5'}\n- Response tree: ${activeState.d8.responseTree || 'Map the decision tree from welcome to booking'}\n- Conditions: ${activeState.d8.conditions || 'Trigger response branches based on intent, area, and urgency'}\n- Phone capture: ${activeState.d8.phoneCapture || 'Collect phone number before the booking branch'}\n- Booking branch: ${activeState.d8.bookingBranch || 'Move qualified leads into a booking confirmation flow'}\n\n## outputs used\n- D5 campaign spec\n- D7 qualifier script\n\n## QA checklist\n- All branches tested: ${activeState.d8.qaBranches ? 'Yes' : 'No'}\n- Messages firing: ${activeState.d8.qaMessages ? 'Yes' : 'No'}\n- Data capture works: ${activeState.d8.qaData ? 'Yes' : 'No'}\n`
     updateD8({ output })
+    await persistProofSprintDeliverable('D8')
     toast('Deliverable 8 generated ✓')
   }
 
@@ -753,6 +780,7 @@ export default function ProofSprintV2() {
                 }
                 const output = `# Daily Sprint Metrics Engine\n\n**Client:** ${selectedClient.business_name}\n**Schedule:** ${activeState.d9.schedule}\n\n## automation stack\n- Meta Graph API\n- OpenClaw\n- AA Dashboard\n- n8n Cron Scheduler\n\n## metrics pulled\n${activeState.d9.metricsToPull}\n\n## alert thresholds\n${activeState.d9.alertThresholds}\n\n## operating mode\nMostly automatic. Human review only when an alert fires or the daily log breaks.`
                 updatePhase2('d9', { ...connected, firstSuccessfulLog: true, output })
+                void persistProofSprintDeliverable('D9')
                 toast('Deliverable 9 generated ✓')
               }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={14} /> Generate Daily Metrics Engine
@@ -784,6 +812,7 @@ export default function ProofSprintV2() {
               <button className="btn-primary" onClick={() => {
                 const output = `# Day 3 Stabilisation Protocol\n\n**Client:** ${selectedClient.business_name}\n\n## three-day snapshot\n- Day 1: ${activeState.d10.day1Log || 'Log the first day.'}\n- Day 2: ${activeState.d10.day2Log || 'Log the second day.'}\n- Day 3: ${activeState.d10.day3Log || 'Log the third day.'}\n\n## stability decision\n${activeState.d10.stabilityDecision || 'Stabilise the winning signals and cut the noise.'}\n\n## recommendation\nContinue. The sprint is stable enough to move into optimisation.`
                 updatePhase2('d10', { stabilityDecision: activeState.d10.stabilityDecision || 'Stabilise the winning signals and cut the noise.', stableApproved: true, output })
+                void persistProofSprintDeliverable('D10')
                 toast('Deliverable 10 generated ✓')
               }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={14} /> Generate Stabilisation Report
@@ -827,6 +856,7 @@ export default function ProofSprintV2() {
               <button className="btn-primary" onClick={() => {
                 const output = `# Day 4 Optimisation Report\n\n**Client:** ${selectedClient.business_name}\n\n## action sheet\n- Pause weak ad sets: ${activeState.d11.pauseWeakAdSets ? 'Yes' : 'No'}\n- Increase winners: ${activeState.d11.increaseWinners ? 'Yes' : 'No'}\n- Swap low CTR creatives: ${activeState.d11.swapLowCtrCreatives ? 'Yes' : 'No'}\n- Adjust budgets: ${activeState.d11.adjustBudgets ? 'Yes' : 'No'}\n- Fix audience overlaps: ${activeState.d11.fixAudienceOverlaps ? 'Yes' : 'No'}\n\n## notes\n${activeState.d11.days13Performance || 'Capture the first three days of data.'}\n\n## SLA\n${activeState.d11.slaTimer}\n\nOptimization is now the priority.`
                 updatePhase2('d11', { completedAllActions: true, notesEntered: true, output })
+                void persistProofSprintDeliverable('D11')
                 toast('Deliverable 11 generated ✓')
               }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={14} /> Generate Optimisation Report
@@ -865,6 +895,7 @@ export default function ProofSprintV2() {
               <button className="btn-primary" onClick={() => {
                 const output = `# Day 7 Mid-Sprint Client Update\n\n**Client:** ${selectedClient.business_name}\n\n## progress\n${activeState.d12.progressUpdate || 'Summarise progress so far.'}\n\n## wins so far\n${activeState.d12.winsSoFar || 'Capture the current wins.'}\n\n## activity summary\n${activeState.d12.activitySummary || 'Summarise ad and lead activity.'}\n\n## what happens next\n${activeState.d12.whatNext || 'Keep the winners live and tighten the weak points.'}\n\n## confidence line\n${activeState.d12.confidenceBuilderCta || 'We are tracking, learning, and accelerating the right signals.'}`
                 updatePhase2('d12', { sendNow: true, editBeforeSend: true, logReplySentiment: true, output })
+                void persistProofSprintDeliverable('D12')
                 toast('Deliverable 12 generated ✓')
               }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={14} /> Generate Client Update
@@ -909,6 +940,7 @@ export default function ProofSprintV2() {
               <button className="btn-primary" onClick={() => {
                 const output = `# Day 8 Acceleration Phase\n\n**Client:** ${selectedClient.business_name}\n\n## winners to scale\n- Lowest CPM: ${activeState.d13.lowestCpm || 'Fill in the lowest CPM signal.'}\n- Highest CTR: ${activeState.d13.highestCtr || 'Fill in the highest CTR signal.'}\n- Best DM volume: ${activeState.d13.bestDmVolume || 'Fill in the strongest DM volume.'}\n- Best CPL: ${activeState.d13.bestCpl || 'Fill in the lowest CPL.'}\n\n## acceleration move\nDuplicate winners, increase budgets, pause weak ads, request new creatives, and rebalance spend.`
                 updatePhase2('d13', { actionsCompleted: true, output })
+                void persistProofSprintDeliverable('D13')
                 toast('Deliverable 13 generated ✓')
               }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={14} /> Generate Acceleration Plan
@@ -953,6 +985,7 @@ export default function ProofSprintV2() {
               <button className="btn-primary" onClick={() => {
                 const output = `# Day 13 Final Data Lock\n\n**Client:** ${selectedClient.business_name}\n\n## locked totals\n${activeState.d14.all14DayTotals || 'Lock the totals here.'}\n\n## recommended summary\n- Spend: ${activeState.d14.spend || '—'}\n- Leads: ${activeState.d14.leads || '—'}\n- DMs: ${activeState.d14.dms || '—'}\n- Bookings: ${activeState.d14.bookings || '—'}\n- Revenue: ${activeState.d14.revenue || '—'}\n\n## best and worst\n- Best ad: ${activeState.d14.bestAd || '—'}\n- Worst ad: ${activeState.d14.worstAd || '—'}\n- Best audience: ${activeState.d14.bestAudience || '—'}`
                 updatePhase2('d14', { appointmentsBookedConfirmed: true, dealsClosedConfirmed: true, revenueCollectedConfirmed: true, output })
+                void persistProofSprintDeliverable('D14')
                 toast('Deliverable 14 generated ✓')
               }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={14} /> Generate Data Lock Sheet
@@ -994,6 +1027,7 @@ export default function ProofSprintV2() {
               <button className="btn-primary" onClick={() => {
                 const output = `# Demand Proof Document\n\n**Client:** ${selectedClient.business_name}\n\n## closeout\n${activeState.d15.dataset || 'Compile the final dataset here.'}\n\n## positioning formula\n${activeState.d15.positioningFormula || 'Proof × Volume × Consistency = Brand'}\n\n## sprint logs\n${activeState.d15.sprintLogs || 'Add the sprint notes here.'}\n\n## demand result\n${activeState.d15.demandResult}\n\nMostly automatic closeout, final delivery pack ready for portal and WhatsApp.`
                 updatePhase2('d15', { whatsappDeliveryMessage: `Your demand proof closeout is ready for ${selectedClient.business_name}.`, creditApproved: true, engagementClosed: true, output })
+                void persistProofSprintDeliverable('D15')
                 toast('Deliverable 15 generated ✓')
               }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={14} /> Generate Demand Proof Closeout
