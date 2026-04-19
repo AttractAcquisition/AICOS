@@ -613,6 +613,59 @@ export default function ProofSprintV2() {
     if (error) throw error
   }
 
+  function applyServerResponse(deliverableKey: ProofSprintDeliverableKey, response: any) {
+    if (!selectedClient) return
+    const text = typeof response?.output === 'string'
+      ? response.output
+      : response?.row?.output_md || JSON.stringify(response?.row?.output_json ?? response?.output ?? {}, null, 2)
+    const rowJson = response?.row?.output_json ?? (typeof response?.output === 'object' ? response.output : null)
+
+    setClientStates(prev => {
+      const current = prev[selectedClient.id] || createInitialState()
+      const next = { ...current }
+
+      switch (deliverableKey) {
+        case 'D1': {
+          const json = rowJson && typeof rowJson === 'object' ? rowJson : null
+          next.d1 = {
+            ...next.d1,
+            transformationType: json?.transformation_type ?? next.d1.transformationType,
+            buyingTrigger: json?.buying_trigger ?? next.d1.buyingTrigger,
+            customerIntents: Array.isArray(json?.customer_intents) ? json.customer_intents.join('\n') : next.d1.customerIntents,
+            competitorAngle: json?.dominant_competitor_angle ?? next.d1.competitorAngle,
+            positioningGap: json?.positioning_gap ?? next.d1.positioningGap,
+            dominantFormula: json?.positioning_formula ?? next.d1.dominantFormula,
+            output: text,
+          }
+          break
+        }
+        case 'D2': next.d2 = { ...next.d2, output: text, exportLabels: Array.isArray(rowJson?.export_labels) ? rowJson.export_labels : next.d2.exportLabels }; break
+        case 'D3': next.d3 = { ...next.d3, output: text, downloadLabels: Array.isArray(rowJson?.download_labels) ? rowJson.download_labels : next.d3.downloadLabels }; break
+        case 'D4': next.d4 = { ...next.d4, output: text, guideTopic: rowJson?.guide_topic ?? next.d4.guideTopic, pdfCopy: rowJson?.pdf_copy ?? next.d4.pdfCopy, cta: rowJson?.cta ?? next.d4.cta, formFields: rowJson?.form_fields ?? next.d4.formFields }; break
+        case 'D5': next.d5 = { ...next.d5, output: text, keywordTrigger: rowJson?.keyword_trigger ?? next.d5.keywordTrigger }; break
+        case 'D6': next.d6 = { ...next.d6, output: text }; break
+        case 'D7': next.d7 = { ...next.d7, output: text }; break
+        case 'D8': next.d8 = { ...next.d8, output: text }; break
+        case 'D9': next.d9 = { ...next.d9, output: text, lastServerResponse: response?.output ?? response?.row?.output_json ?? null }; break
+        case 'D10': next.d10 = { ...next.d10, output: text }; break
+        case 'D11': next.d11 = { ...next.d11, output: text }; break
+        case 'D12': next.d12 = { ...next.d12, output: text }; break
+        case 'D13': next.d13 = { ...next.d13, output: text }; break
+        case 'D14': next.d14 = { ...next.d14, output: text }; break
+        case 'D15': next.d15 = {
+          ...next.d15,
+          output: text,
+          whatsappDeliveryMessage: rowJson?.delivery_message ?? next.d15.whatsappDeliveryMessage,
+          portalLink: rowJson?.portal_link ?? next.d15.portalLink,
+          creditApproved: Boolean(rowJson?.creditApproved ?? next.d15.creditApproved),
+          engagementClosed: Boolean(rowJson?.engagementClosed ?? next.d15.engagementClosed),
+        }
+      }
+
+      return { ...prev, [selectedClient.id]: next }
+    })
+  }
+
   function selectClient(client: ClientRow) {
     setSelectedClient(client)
     ensureClientState(client)
@@ -719,6 +772,8 @@ export default function ProofSprintV2() {
       toast(`Backend sync failed for ${deliverableKey}: ${error.message}`, 'error')
       return null
     }
+
+    if (data) applyServerResponse(deliverableKey, data)
 
     return data
   }
@@ -1447,8 +1502,8 @@ export default function ProofSprintV2() {
                       <Field label="OpenClaw agent id">
                         <input className="input" value={activeState.d1.openclawAgentId} onChange={e => updateD1({ openclawAgentId: e.target.value })} placeholder="agent_..." />
                       </Field>
-                      <Field label="Meta access token ref">
-                        <input className="input" value={activeState.d1.metaAccessTokenRef} onChange={e => updateD1({ metaAccessTokenRef: e.target.value })} placeholder="vault ref or secret name" />
+                      <Field label="Meta secret ref (agent-side)">
+                        <input className="input" value={activeState.d1.metaAccessTokenRef} onChange={e => updateD1({ metaAccessTokenRef: e.target.value })} placeholder="vault ref or env name" />
                       </Field>
                     </div>
                   </Panel>
