@@ -567,6 +567,7 @@ export default function ProofSprintV2() {
   const [clientStates, setClientStates] = useState<Record<string, SprintV2State>>({})
   const [activeTab, setActiveTab] = useState<number>(1)
   const [hydratingClientId, setHydratingClientId] = useState<string | null>(null)
+  const [persistenceMode, setPersistenceMode] = useState<'unknown' | 'remote' | 'local'>('unknown')
   const saveTimerRef = useRef<number | null>(null)
   const hydratedClientIdsRef = useRef<Set<string>>(new Set())
 
@@ -595,26 +596,44 @@ export default function ProofSprintV2() {
   }
 
   async function loadPersistedClientState(clientId: string) {
-    const { data, error } = await (supabase as any)
-      .from('proof_sprint_client_data')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    try {
+      const { data, error } = await (supabase as any)
+        .from('proof_sprint_client_data')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-    if (error) throw error
-    return buildPersistedStateFromRow(data)
+      if (error) throw error
+      setPersistenceMode('remote')
+      return buildPersistedStateFromRow(data)
+    } catch {
+      setPersistenceMode('local')
+      const cached = localStorage.getItem(`proof-sprint-v2-${clientId}`)
+      return cached ? mergeSprintState(JSON.parse(cached) as Partial<SprintV2State>) : createInitialState()
+    }
   }
 
   async function saveClientState(clientId: string, deliverableKey: ProofSprintDeliverableKey, state: SprintV2State) {
+    if (persistenceMode === 'local') {
+      localStorage.setItem(`proof-sprint-v2-${clientId}`, JSON.stringify(state))
+      return
+    }
+
     const patch = proofSprintClientDataPatch(clientId, sanitizeSprintState(state), deliverableKey)
 
-    const { error } = await (supabase as any).from('proof_sprint_client_data').upsert(patch, {
-      onConflict: 'client_id,deliverable_key',
-    })
+    try {
+      const { error } = await (supabase as any).from('proof_sprint_client_data').upsert(patch, {
+        onConflict: 'client_id,deliverable_key',
+      })
 
-    if (error) throw error
+      if (error) throw error
+      localStorage.setItem(`proof-sprint-v2-${clientId}`, JSON.stringify(state))
+    } catch {
+      setPersistenceMode('local')
+      localStorage.setItem(`proof-sprint-v2-${clientId}`, JSON.stringify(state))
+    }
   }
 
   function applyServerResponse(deliverableKey: ProofSprintDeliverableKey, response: any) {
