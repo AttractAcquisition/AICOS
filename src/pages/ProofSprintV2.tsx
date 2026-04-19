@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CheckCircle2, Circle, ChevronRight, Loader2, Lock, Sparkles, ShieldCheck, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -42,6 +42,13 @@ interface D1State {
   competitorAngle: string
   positioningGap: string
   dominantFormula: string
+  sprintGoLiveDate: string
+  c1CampaignId: string
+  c2CampaignId: string
+  metaAccessTokenRef: string
+  openclawAgentId: string
+  operatorWhatsapp: string
+  clientWhatsapp: string
   assets: Record<AssetCategoryKey, UploadedAsset[]>
   apps: Record<AppKey, AppConnection>
 }
@@ -188,6 +195,13 @@ function createInitialState(): SprintV2State {
       competitorAngle: '',
       positioningGap: '',
       dominantFormula: '',
+      sprintGoLiveDate: '',
+      c1CampaignId: '',
+      c2CampaignId: '',
+      metaAccessTokenRef: '',
+      openclawAgentId: '',
+      operatorWhatsapp: '',
+      clientWhatsapp: '',
       assets: {
         beforePhotos: [],
         afterPhotos: [],
@@ -377,6 +391,83 @@ function compactTranscript(text: string) {
     .slice(0, 500)
 }
 
+const TAB_TO_DELIVERABLE: Record<number, ProofSprintDeliverableKey> = {
+  1: 'D1',
+  2: 'D2',
+  3: 'D3',
+  4: 'D4',
+  5: 'D5',
+  6: 'D6',
+  7: 'D7',
+  8: 'D8',
+  9: 'D9',
+  10: 'D10',
+  11: 'D11',
+  12: 'D12',
+  13: 'D13',
+  14: 'D14',
+  15: 'D15',
+}
+
+function mergeSprintState(saved?: Partial<SprintV2State> | null): SprintV2State {
+  const base = createInitialState()
+  if (!saved) return base
+  return {
+    ...base,
+    ...saved,
+    d1: { ...base.d1, ...(saved.d1 ?? {}), assets: { ...base.d1.assets, ...(saved.d1?.assets ?? {}) }, apps: { ...base.d1.apps, ...(saved.d1?.apps ?? {}) } },
+    d2: { ...base.d2, ...(saved.d2 ?? {}) },
+    d3: { ...base.d3, ...(saved.d3 ?? {}) },
+    d4: { ...base.d4, ...(saved.d4 ?? {}) },
+    d5: { ...base.d5, ...(saved.d5 ?? {}) },
+    d6: { ...base.d6, ...(saved.d6 ?? {}) },
+    d7: { ...base.d7, ...(saved.d7 ?? {}) },
+    d8: { ...base.d8, ...(saved.d8 ?? {}) },
+    d9: { ...base.d9, ...(saved.d9 ?? {}) },
+    d10: { ...base.d10, ...(saved.d10 ?? {}) },
+    d11: { ...base.d11, ...(saved.d11 ?? {}) },
+    d12: { ...base.d12, ...(saved.d12 ?? {}) },
+    d13: { ...base.d13, ...(saved.d13 ?? {}) },
+    d14: { ...base.d14, ...(saved.d14 ?? {}) },
+    d15: { ...base.d15, ...(saved.d15 ?? {}) },
+  }
+}
+
+function sanitizeSprintState(state: SprintV2State): SprintV2State {
+  return {
+    ...state,
+    d1: {
+      ...state.d1,
+      apps: Object.fromEntries(
+        Object.entries(state.d1.apps).map(([key, app]) => [key, { ...app, apiKey: '', secret: '' }]),
+      ) as Record<AppKey, AppConnection>,
+    },
+  }
+}
+
+function proofSprintClientDataPatch(clientId: string, state: SprintV2State, deliverableKey: ProofSprintDeliverableKey) {
+  return {
+    client_id: clientId,
+    deliverable_key: deliverableKey,
+    input_json: state,
+    sprint_go_live_date: state.d1.sprintGoLiveDate || null,
+    c1_campaign_id: state.d1.c1CampaignId || null,
+    c2_campaign_id: state.d1.c2CampaignId || null,
+    meta_access_token_ref: state.d1.metaAccessTokenRef || null,
+    openclaw_agent_id: state.d1.openclawAgentId || null,
+    operator_whatsapp: state.d1.operatorWhatsapp || null,
+    client_whatsapp: state.d1.clientWhatsapp || null,
+    running_totals_json: state.d14?.all14DayTotals ? { all14DayTotals: state.d14.all14DayTotals } : {},
+    status: state.d15.engagementClosed ? 'completed' : 'draft',
+  }
+}
+
+function buildPersistedStateFromRow(row: Record<string, any> | null | undefined) {
+  if (!row) return createInitialState()
+  const savedState = (row.input_json ?? {}) as Partial<SprintV2State>
+  return sanitizeSprintState(mergeSprintState(savedState))
+}
+
 function formatSelectedImageNames(state: D2State, d1: D1State) {
   const allAssets = Object.values(d1.assets).flat()
   const selected = allAssets.filter(asset => state.selectedAssets.includes(asset.path))
@@ -471,8 +562,17 @@ export default function ProofSprintV2() {
   const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null)
   const [clientStates, setClientStates] = useState<Record<string, SprintV2State>>({})
   const [activeTab, setActiveTab] = useState<number>(1)
+  const [hydratingClientId, setHydratingClientId] = useState<string | null>(null)
+  const saveTimerRef = useRef<number | null>(null)
+  const hydratedClientIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => { loadClients() }, [role, user?.id])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+    }
+  }, [])
 
   async function loadClients() {
     setLoading(true)
@@ -490,6 +590,29 @@ export default function ProofSprintV2() {
     })
   }
 
+  async function loadPersistedClientState(clientId: string) {
+    const { data, error } = await (supabase as any)
+      .from('proof_sprint_client_data')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw error
+    return buildPersistedStateFromRow(data)
+  }
+
+  async function saveClientState(clientId: string, deliverableKey: ProofSprintDeliverableKey, state: SprintV2State) {
+    const patch = proofSprintClientDataPatch(clientId, sanitizeSprintState(state), deliverableKey)
+
+    const { error } = await (supabase as any).from('proof_sprint_client_data').upsert(patch, {
+      onConflict: 'client_id,deliverable_key',
+    })
+
+    if (error) throw error
+  }
+
   function selectClient(client: ClientRow) {
     setSelectedClient(client)
     ensureClientState(client)
@@ -497,6 +620,45 @@ export default function ProofSprintV2() {
   }
 
   const activeState = selectedClient ? clientStates[selectedClient.id] : null
+
+  useEffect(() => {
+    if (!selectedClient) return
+    if (hydratedClientIdsRef.current.has(selectedClient.id)) return
+
+    let cancelled = false
+    setHydratingClientId(selectedClient.id)
+
+    void (async () => {
+      try {
+        const hydrated = await loadPersistedClientState(selectedClient.id)
+        if (cancelled) return
+        setClientStates(prev => ({ ...prev, [selectedClient.id]: hydrated }))
+        hydratedClientIdsRef.current.add(selectedClient.id)
+      } catch {
+        if (!cancelled) {
+          setClientStates(prev => ({ ...prev, [selectedClient.id]: createInitialState() }))
+        }
+      } finally {
+        if (!cancelled) setHydratingClientId(null)
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [selectedClient?.id])
+
+  useEffect(() => {
+    if (!selectedClient || !activeState) return
+    if (hydratingClientId === selectedClient.id) return
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+
+    saveTimerRef.current = window.setTimeout(() => {
+      void saveClientState(selectedClient.id, TAB_TO_DELIVERABLE[activeTab] ?? 'D1', activeState).catch(() => null)
+    }, 800)
+
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+    }
+  }, [selectedClient?.id, activeTab, activeState])
 
   function updateActiveState(updater: (state: SprintV2State) => SprintV2State) {
     if (!selectedClient) return
@@ -540,11 +702,16 @@ export default function ProofSprintV2() {
 
   async function persistProofSprintDeliverable(deliverableKey: ProofSprintDeliverableKey) {
     if (!selectedClient || !activeState) return null
+    try {
+      await saveClientState(selectedClient.id, deliverableKey, activeState)
+    } catch (error) {
+      toast(`Local save failed for ${deliverableKey}: ${error instanceof Error ? error.message : String(error)}`, 'error')
+    }
     const { data, error } = await supabase.functions.invoke('proof-sprint-run-deliverable', {
       body: {
         client_id: selectedClient.id,
         deliverable_key: deliverableKey,
-        input_json: activeState,
+        input_json: sanitizeSprintState(activeState),
       },
     })
 
@@ -1049,7 +1216,7 @@ export default function ProofSprintV2() {
   const connectedAppsCount = activeState ? Object.values(activeState.d1.apps).filter(app => app.enabled && app.testStatus === 'connected').length : 0
   const completedTabs = activeState ? TAB_DEFS.filter(tab => {
     switch (tab.id) {
-      case 1: return !!activeState.d1.transcript.trim() && activeAssetsCount > 0 && !!activeState.d1.output.trim()
+      case 1: return !!activeState.d1.transcript.trim() && activeAssetsCount > 0 && !!activeState.d1.output.trim() && !!activeState.d1.sprintGoLiveDate.trim() && !!activeState.d1.clientWhatsapp.trim() && !!activeState.d1.operatorWhatsapp.trim()
       case 2: return !!activeState.d2.output.trim()
       case 3: return !!activeState.d3.output.trim()
       case 4: return !!activeState.d4.output.trim()
@@ -1073,7 +1240,7 @@ export default function ProofSprintV2() {
   const currentStepComplete = (tabId: number) => {
     if (!activeState) return false
     switch (tabId) {
-      case 1: return !!activeState.d1.transcript.trim() && activeAssetsCount > 0 && !!activeState.d1.output.trim()
+      case 1: return !!activeState.d1.transcript.trim() && activeAssetsCount > 0 && !!activeState.d1.output.trim() && !!activeState.d1.sprintGoLiveDate.trim() && !!activeState.d1.clientWhatsapp.trim() && !!activeState.d1.operatorWhatsapp.trim()
       case 2: return !!activeState.d2.output.trim() && !!activeState.d2.topObjection.trim()
       case 3: return !!activeState.d3.output.trim() && !!activeState.d3.brandColors.trim()
       case 4: return !!activeState.d4.output.trim() && !!activeState.d4.vertical.trim()
@@ -1195,6 +1362,11 @@ export default function ProofSprintV2() {
               <div style={{ height: 4, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{ width: `${progressPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--teal-dark), var(--teal))', borderRadius: 99 }} />
               </div>
+              {hydratingClientId === selectedClient.id && (
+                <div style={{ marginTop: 10, fontSize: 11, color: 'var(--grey)', fontFamily: 'DM Mono' }}>
+                  Restoring saved sprint state from Supabase...
+                </div>
+              )}
             </div>
 
             {phase2Unlocked && (
@@ -1250,6 +1422,35 @@ export default function ProofSprintV2() {
                       placeholder="Paste meeting transcript here..."
                       style={{ resize: 'vertical', lineHeight: 1.65 }}
                     />
+                  </Panel>
+
+                  <Panel
+                    title="A1. Sprint Setup"
+                    subtitle="These fields keep the delivery engine wired to the right Meta, WhatsApp, and OpenClaw targets."
+                  >
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+                      <Field label="Sprint go-live date">
+                        <input className="input" type="date" value={activeState.d1.sprintGoLiveDate} onChange={e => updateD1({ sprintGoLiveDate: e.target.value })} />
+                      </Field>
+                      <Field label="Client WhatsApp">
+                        <input className="input" value={activeState.d1.clientWhatsapp} onChange={e => updateD1({ clientWhatsapp: e.target.value })} placeholder="+27..." />
+                      </Field>
+                      <Field label="Operator WhatsApp">
+                        <input className="input" value={activeState.d1.operatorWhatsapp} onChange={e => updateD1({ operatorWhatsapp: e.target.value })} placeholder="+27..." />
+                      </Field>
+                      <Field label="Campaign 1 ID">
+                        <input className="input" value={activeState.d1.c1CampaignId} onChange={e => updateD1({ c1CampaignId: e.target.value })} placeholder="Meta campaign id" />
+                      </Field>
+                      <Field label="Campaign 2 ID">
+                        <input className="input" value={activeState.d1.c2CampaignId} onChange={e => updateD1({ c2CampaignId: e.target.value })} placeholder="Meta campaign id" />
+                      </Field>
+                      <Field label="OpenClaw agent id">
+                        <input className="input" value={activeState.d1.openclawAgentId} onChange={e => updateD1({ openclawAgentId: e.target.value })} placeholder="agent_..." />
+                      </Field>
+                      <Field label="Meta access token ref">
+                        <input className="input" value={activeState.d1.metaAccessTokenRef} onChange={e => updateD1({ metaAccessTokenRef: e.target.value })} placeholder="vault ref or secret name" />
+                      </Field>
+                    </div>
                   </Panel>
 
                   <Panel

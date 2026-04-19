@@ -55,6 +55,85 @@ function mdFromObject(title: string, value: any) {
   return lines.join('\n')
 }
 
+function deriveSprintDay(client: ProofSprintClientData) {
+  if (typeof client.sprint_day_current === 'number' && client.sprint_day_current > 0) return client.sprint_day_current
+  if (client.sprint_go_live_date) {
+    const live = new Date(client.sprint_go_live_date)
+    const today = new Date()
+    const diffMs = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(live.getFullYear(), live.getMonth(), live.getDate())
+    return Math.max(1, Math.floor(diffMs / 86400000) + 1)
+  }
+  return 1
+}
+
+function clientDataPatchFromInput(deliverableKey: DeliverableKey, inputJson: Record<string, any>) {
+  const cleanInput = sanitizeSprintInput(inputJson)
+  const d1 = cleanInput?.d1 ?? {}
+  return {
+    deliverable_key: deliverableKey,
+    input_json: cleanInput,
+    sprint_go_live_date: d1.sprintGoLiveDate || null,
+    c1_campaign_id: d1.c1CampaignId || null,
+    c2_campaign_id: d1.c2CampaignId || null,
+    meta_access_token_ref: d1.metaAccessTokenRef || null,
+    openclaw_agent_id: d1.openclawAgentId || null,
+    operator_whatsapp: d1.operatorWhatsapp || null,
+    client_whatsapp: d1.clientWhatsapp || null,
+    d10_cleared: Boolean(cleanInput?.d10?.stableApproved),
+    d11_action_list_confirmed: Boolean(cleanInput?.d11?.completedAllActions),
+    d14_locked: Boolean(cleanInput?.d14?.appointmentsBookedConfirmed && cleanInput?.d14?.dealsClosedConfirmed && cleanInput?.d14?.revenueCollectedConfirmed),
+    status: cleanInput?.d15?.engagementClosed ? 'completed' : 'draft',
+    updated_at: new Date().toISOString(),
+  }
+}
+
+function sanitizeSprintInput(inputJson: Record<string, any>) {
+  const d1 = inputJson?.d1 ?? {}
+  const apps = Object.fromEntries(
+    Object.entries(d1.apps ?? {}).map(([key, app]: [string, any]) => [key, { ...app, apiKey: '', secret: '' }]),
+  )
+  return {
+    ...inputJson,
+    d1: {
+      ...d1,
+      apps,
+    },
+  }
+}
+
+function resolveAccessToken(client: ProofSprintClientData) {
+  const ref = client.meta_access_token_ref?.trim()
+  return (ref ? Deno.env.get(ref) : null) || Deno.env.get('META_ACCESS_TOKEN') || Deno.env.get('META_GRAPH_ACCESS_TOKEN') || null
+}
+
+async function fetchCampaignInsights(campaignId: string, accessToken: string) {
+  const url = new URL(`https://graph.facebook.com/v20.0/${campaignId}/insights`)
+  url.searchParams.set('fields', 'spend,cpm,ctr,actions,cost_per_action_type')
+  url.searchParams.set('date_preset', 'today')
+  url.searchParams.set('access_token', accessToken)
+
+  const response = await fetch(url)
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(`Meta Graph request failed: ${JSON.stringify(payload)}`)
+
+  const row = Array.isArray(payload?.data) ? payload.data[0] ?? {} : {}
+  const actions = new Map<string, number>()
+  for (const item of row.actions ?? []) actions.set(String(item.action_type), Number(item.value ?? 0))
+  const costs = new Map<string, number>()
+  for (const item of row.cost_per_action_type ?? []) costs.set(String(item.action_type), Number(item.value ?? 0))
+
+  return {
+    spend: Number(row.spend ?? 0),
+    cpm: Number(row.cpm ?? 0),
+    ctr: Number(row.ctr ?? 0),
+    dms_started: Number(actions.get('onsite_conversion.messaging_conversation_started_7d') ?? actions.get('messaging_conversation_started') ?? actions.get('onsite_conversion.messaging_conversation_started') ?? 0),
+    cost_per_message: Number(costs.get('onsite_conversion.messaging_conversation_started_7d') ?? costs.get('messaging_conversation_started') ?? costs.get('onsite_conversion.messaging_conversation_started') ?? 0),
+    leads_generated: Number(actions.get('lead') ?? actions.get('onsite_conversion.lead') ?? 0),
+    cost_per_lead: Number(costs.get('lead') ?? costs.get('onsite_conversion.lead') ?? 0),
+    raw_api_response: payload,
+  }
+}
+
 function dependenciesFor(deliverableKey: DeliverableKey) {
   switch (deliverableKey) {
     case 'D1': return []
@@ -229,9 +308,7 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
     const supabase = createProofSprintClient()
     const nextState = {
       client_id: clientId,
-      deliverable_key: deliverableKey,
-      input_json: options.inputJson,
-      updated_at: new Date().toISOString(),
+      ...clientDataPatchFromInput(deliverableKey, options.inputJson),
     }
 
     await supabase.from('proof_sprint_client_data').upsert(nextState, {
@@ -247,7 +324,7 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
 
   const cfg = configFor(deliverableKey)
   const promptVersion = '2.0'
-  const input = { ...client.input_json, client_data: client }
+  const input = sanitizeSprintInput({ ...client.input_json, client_data: client })
   const promptRun = await savePromptRunBase({
     client_id: clientId,
     deliverable_key: deliverableKey,
@@ -263,37 +340,82 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
 
   try {
     if (deliverableKey === 'D9') {
-      const sprintDay = Number(client.sprint_day_current || 1)
+      const sprintDay = deriveSprintDay(client)
+      const accessToken = resolveAccessToken(client)
+      const today = new Date().toISOString().slice(0, 10)
+      let rawApiResponse: Record<string, any> = {
+        note: 'OpenClaw metrics job queued',
+        client_id: clientId,
+        deliverable_key: deliverableKey,
+        c1_campaign_id: client.c1_campaign_id ?? null,
+        c2_campaign_id: client.c2_campaign_id ?? null,
+      }
+
+      const c1 = client.c1_campaign_id && accessToken
+        ? await fetchCampaignInsights(client.c1_campaign_id, accessToken).catch(error => {
+            rawApiResponse = { ...rawApiResponse, c1_error: error instanceof Error ? error.message : String(error) }
+            return null
+          })
+        : null
+      const c2 = client.c2_campaign_id && accessToken
+        ? await fetchCampaignInsights(client.c2_campaign_id, accessToken).catch(error => {
+            rawApiResponse = { ...rawApiResponse, c2_error: error instanceof Error ? error.message : String(error) }
+            return null
+          })
+        : null
+
+      if (c1 || c2) {
+        rawApiResponse = {
+          fetched: true,
+          c1: c1 ?? undefined,
+          c2: c2 ?? undefined,
+        }
+      }
+
+      const blendedSpend = Number(c1?.spend ?? 0) + Number(c2?.spend ?? 0)
+      const resultCount = Number(c2?.leads_generated ?? 0) > 0 ? Number(c2?.leads_generated ?? 0) : Number(c1?.dms_started ?? 0)
+      const blendedCostPerResult = resultCount > 0 ? blendedSpend / resultCount : 0
+
       const output = {
         client_id: clientId,
         sprint_day: sprintDay,
-        log_date: new Date().toISOString().slice(0, 10),
+        log_date: today,
         stabilisation_phase: sprintDay <= 3,
-        status: 'queued',
-        raw_api_response: { note: 'OpenClaw metrics job queued', client_id: clientId, deliverable_key: deliverableKey },
+        status: c1 || c2 ? 'completed' : 'queued',
+        campaign_ids: {
+          c1_campaign_id: client.c1_campaign_id ?? null,
+          c2_campaign_id: client.c2_campaign_id ?? null,
+        },
+        metrics: {
+          c1,
+          c2,
+          blended_total_spend: blendedSpend,
+          blended_cost_per_result: blendedCostPerResult,
+        },
+        raw_api_response: rawApiResponse,
       }
       const supabase = createProofSprintClient()
       await supabase.from('proof_sprint_daily_metrics').upsert({
         client_id: clientId,
         sprint_day: sprintDay,
-        log_date: new Date().toISOString().slice(0, 10),
-        c1_spend: 0,
-        c1_cpm: 0,
-        c1_ctr: 0,
-        c1_cost_per_message: 0,
-        c1_dms_started: 0,
-        c2_spend: 0,
-        c2_cpm: 0,
-        c2_ctr: 0,
-        c2_cost_per_lead: 0,
-        c2_leads_generated: 0,
-        blended_total_spend: 0,
-        blended_cost_per_result: 0,
+        log_date: today,
+        c1_spend: Number(c1?.spend ?? 0),
+        c1_cpm: Number(c1?.cpm ?? 0),
+        c1_ctr: Number(c1?.ctr ?? 0),
+        c1_cost_per_message: Number(c1?.cost_per_message ?? 0),
+        c1_dms_started: Number(c1?.dms_started ?? 0),
+        c2_spend: Number(c2?.spend ?? 0),
+        c2_cpm: Number(c2?.cpm ?? 0),
+        c2_ctr: Number(c2?.ctr ?? 0),
+        c2_cost_per_lead: Number(c2?.cost_per_lead ?? 0),
+        c2_leads_generated: Number(c2?.leads_generated ?? 0),
+        blended_total_spend: blendedSpend,
+        blended_cost_per_result: blendedCostPerResult,
         kill_alerts_json: [],
         scale_alerts_json: [],
         stabilisation_phase: sprintDay <= 3,
-        raw_api_response: { note: 'OpenClaw metrics job queued', client_id: clientId, deliverable_key: deliverableKey },
-        status: 'queued',
+        raw_api_response: rawApiResponse,
+        status: c1 || c2 ? 'completed' : 'queued',
         created_by: null,
       }, { onConflict: 'client_id,sprint_day,log_date' })
       const job = await queueAgentJob({
@@ -338,6 +460,26 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
       run_id: options.runId ?? null,
       created_by: null,
     })
+
+    if (deliverableKey === 'D15') {
+      const supabase = createProofSprintClient()
+      const inputD15 = input?.d15 ?? {}
+      await supabase.from('proof_sprint_closeouts').upsert({
+        client_id: clientId,
+        deliverable_key: 'D15',
+        demand_determination: String((parsed.output_json as Record<string, any>)?.demand_determination || inputD15.demandResult || 'inconclusive').toLowerCase(),
+        deposit_credit_confirmed: Boolean(inputD15.creditApproved),
+        proof_brand_proceed: Boolean(inputD15.engagementClosed),
+        delivery_receipt_wa: String(inputD15.whatsappDeliveryMessage || ''),
+        delivery_receipt_portal: String(inputD15.portalLink || ''),
+        input_json: input,
+        output_json: parsed.output_json,
+        artifact_paths: [],
+        status: 'draft',
+        created_by: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'client_id,deliverable_key' })
+    }
 
     let agentJob: Record<string, any> | null = null
     if (cfg.openclawRequired || options.forceAgent) {

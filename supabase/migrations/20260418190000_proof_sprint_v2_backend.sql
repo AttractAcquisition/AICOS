@@ -172,6 +172,7 @@ create table if not exists public.proof_sprint_closeouts (
 );
 
 create index if not exists proof_sprint_closeouts_client_idx on public.proof_sprint_closeouts (client_id, created_at desc);
+create unique index if not exists proof_sprint_closeouts_client_deliverable_uidx on public.proof_sprint_closeouts (client_id, deliverable_key);
 
 
 -- -----------------------------------------------------------------------------
