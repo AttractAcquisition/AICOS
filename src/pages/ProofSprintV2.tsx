@@ -46,6 +46,8 @@ interface D1State {
   c1CampaignId: string
   c2CampaignId: string
   metaAccessTokenRef: string
+  telegramBotToken: string
+  telegramChatId: string
   openclawAgentId: string
   operatorWhatsapp: string
   clientWhatsapp: string
@@ -199,6 +201,8 @@ function createInitialState(): SprintV2State {
       c1CampaignId: '',
       c2CampaignId: '',
       metaAccessTokenRef: '',
+      telegramBotToken: '',
+      telegramChatId: '',
       openclawAgentId: '',
       operatorWhatsapp: '',
       clientWhatsapp: '',
@@ -1504,6 +1508,12 @@ export default function ProofSprintV2() {
                       </Field>
                       <Field label="Meta secret ref (agent-side)">
                         <input className="input" value={activeState.d1.metaAccessTokenRef} onChange={e => updateD1({ metaAccessTokenRef: e.target.value })} placeholder="vault ref or env name" />
+                      </Field>
+                      <Field label="Telegram bot token">
+                        <input className="input" type="password" value={activeState.d1.telegramBotToken} onChange={e => updateD1({ telegramBotToken: e.target.value })} placeholder="telegram bot token" />
+                      </Field>
+                      <Field label="Telegram chat id">
+                        <input className="input" value={activeState.d1.telegramChatId} onChange={e => updateD1({ telegramChatId: e.target.value })} placeholder="telegram chat id" />
                       </Field>
                     </div>
                   </Panel>

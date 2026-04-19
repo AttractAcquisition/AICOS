@@ -153,8 +153,8 @@ export async function openaiMarkdown(systemPrompt: string, userPrompt: string, m
   return String(data.output_text || data.output?.[0]?.content?.[0]?.text || '').trim()
 }
 
-export async function sendTelegramMessage(chatId: string, text: string) {
-  const token = Deno.env.get('TELEGRAM_BOT_TOKEN') || Deno.env.get('OPENCLAW_TELEGRAM_BOT_TOKEN')
+export async function sendTelegramMessage(chatId: string, text: string, botToken?: string | null) {
+  const token = botToken || Deno.env.get('TELEGRAM_BOT_TOKEN') || Deno.env.get('OPENCLAW_TELEGRAM_BOT_TOKEN')
   if (!token) {
     return { ok: false, skipped: true, reason: 'TELEGRAM_BOT_TOKEN not configured' }
   }
@@ -186,6 +186,7 @@ export async function queueAgentJob(params: {
   payloadJson: Record<string, any>
   openclawAgentId?: string | null
   telegramChatId?: string | null
+  telegramBotToken?: string | null
 }) {
   const supabase = createServiceClient()
   const { data, error } = await supabase.from('proof_sprints_agent_jobs').upsert({
@@ -215,6 +216,7 @@ export async function queueAgentJob(params: {
       const telegramReceipt = await sendTelegramMessage(
         params.telegramChatId,
         `<b>OpenClaw job</b>\nDeliverable: ${params.deliverableKey}\nPrompt: ${params.promptKey}\nJob: ${data.id}`,
+        params.telegramBotToken ?? null,
       )
       await supabase.from('proof_sprints_agent_jobs').update({
         telegram_message_id: String(telegramReceipt?.result?.message_id ?? ''),

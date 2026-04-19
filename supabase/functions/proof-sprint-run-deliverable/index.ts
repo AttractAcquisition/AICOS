@@ -325,6 +325,8 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
   const cfg = configFor(deliverableKey)
   const promptVersion = '2.0'
   const input = sanitizeSprintInput({ ...client.input_json, client_data: client })
+  const telegramBotToken = String(input?.d1?.telegramBotToken || client.input_json?.d1?.telegramBotToken || '').trim() || null
+  const telegramChatId = String(input?.d1?.telegramChatId || client.input_json?.d1?.telegramChatId || Deno.env.get('OPENCLAW_TELEGRAM_CHAT_ID') || Deno.env.get('TELEGRAM_CHAT_ID') || '').trim() || null
   const promptRun = await savePromptRunBase({
     client_id: clientId,
     deliverable_key: deliverableKey,
@@ -430,7 +432,8 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
         callbackTarget: `supabase://proof_sprint_daily_metrics/client/${clientId}/day/${sprintDay}`,
         payloadJson: { client, deps, sprint_day: sprintDay },
         openclawAgentId: client.openclaw_agent_id ?? null,
-        telegramChatId: Deno.env.get('OPENCLAW_TELEGRAM_CHAT_ID') || Deno.env.get('TELEGRAM_CHAT_ID') || undefined,
+        telegramChatId: telegramChatId ?? undefined,
+        telegramBotToken: telegramBotToken ?? undefined,
       })
       await markPromptRun(promptRun.id!, {
         status: 'completed',
@@ -507,7 +510,8 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
         callbackTarget: `supabase://${cfg.outputTable}/client/${clientId}`,
         payloadJson: { client, deps, output: parsed.output_json, output_md: parsed.output_md },
         openclawAgentId: client.openclaw_agent_id ?? null,
-        telegramChatId: Deno.env.get('OPENCLAW_TELEGRAM_CHAT_ID') || Deno.env.get('TELEGRAM_CHAT_ID') || undefined,
+        telegramChatId: telegramChatId ?? undefined,
+        telegramBotToken: telegramBotToken ?? undefined,
       })
     }
 
