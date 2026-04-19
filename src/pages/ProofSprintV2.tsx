@@ -373,28 +373,6 @@ function createInitialState(): SprintV2State {
   }
 }
 
-function pickLeadMagnetTopic(vertical: string) {
-  const v = vertical.trim().toLowerCase()
-  if (!v) return 'Local Demand Guide'
-  if (v.includes('plumb')) return 'Emergency Plumbing Buyer Guide'
-  if (v.includes('electric')) return 'Electrical Safety & Hire Guide'
-  if (v.includes('landscap')) return 'Before You Hire Landscaping Guide'
-  if (v.includes('groom')) return 'Pet Grooming Care Guide'
-  if (v.includes('detail')) return 'How to Choose the Right Detailer Guide'
-  if (v.includes('renov')) return 'Home Renovation Planning Guide'
-  return `${vertical.trim()} Buyer Guide`
-}
-
-function compactTranscript(text: string) {
-  return text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .slice(0, 6)
-    .join(' ')
-    .slice(0, 500)
-}
-
 const TAB_TO_DELIVERABLE: Record<number, ProofSprintDeliverableKey> = {
   1: 'D1',
   2: 'D2',
@@ -470,12 +448,6 @@ function buildPersistedStateFromRow(row: Record<string, any> | null | undefined)
   if (!row) return createInitialState()
   const savedState = (row.input_json ?? {}) as Partial<SprintV2State>
   return sanitizeSprintState(mergeSprintState(savedState))
-}
-
-function formatSelectedImageNames(state: D2State, d1: D1State) {
-  const allAssets = Object.values(d1.assets).flat()
-  const selected = allAssets.filter(asset => state.selectedAssets.includes(asset.path))
-  return selected.length > 0 ? selected.map(asset => asset.name) : allAssets.slice(0, 3).map(asset => asset.name)
 }
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
@@ -864,115 +836,48 @@ export default function ProofSprintV2() {
 
   async function generateD1() {
     if (!selectedClient || !activeState) return
-    const transcript = activeState.d1.transcript.trim()
-    const assetCount = Object.values(activeState.d1.assets).flat().length
-    const transcriptPreview = compactTranscript(transcript)
-    const transformationType = transcript.toLowerCase().includes('before') || transcript.toLowerCase().includes('after')
-      ? 'Visible transformation from the current state to the desired state'
-      : 'Proof-led local service transformation'
-    const buyingTrigger = 'Speed, trust, visible proof, and low risk'
-    const customerIntents = [
-      '- Wants the job solved with minimum friction',
-      '- Wants visible proof that the service works',
-      '- Wants a local provider that feels credible immediately',
-    ].join('\n')
-    const competitorAngle = 'Competitors lead with generic claims. This process leads with evidence and local proof.'
-    const positioningGap = 'No one owns the proof-first, outcome-led local narrative in this market.'
-    const dominantFormula = 'Proof × Volume × Consistency = Brand'
-
-    const output = `# Business Intelligence & Positioning Document\n\n**Client:** ${selectedClient.business_name}\n**Transcript words:** ${transcript.split(/\s+/).filter(Boolean).length}\n**Assets uploaded:** ${assetCount}\n\n## transformation type\n${transformationType}\n\n## buying trigger\n${buyingTrigger}\n\n## top customer intents\n${customerIntents}\n\n## competitor angle\n${competitorAngle}\n\n## positioning gap\n${positioningGap}\n\n## dominant formula\n${dominantFormula}\n\n## transcript excerpt\n${transcriptPreview || 'Paste transcript from the transcriber AI.'}\n`
-
-    updateD1({
-      transformationType,
-      buyingTrigger,
-      customerIntents,
-      competitorAngle,
-      positioningGap,
-      dominantFormula,
-      output,
-    })
     await persistProofSprintDeliverable('D1')
     toast('Deliverable 1 generated ✓')
   }
 
   async function generateD2() {
     if (!selectedClient || !activeState) return
-    const topObjection = activeState.d2.topObjection.trim() || 'I need to think about it'
-    const formula = activeState.d1.dominantFormula || 'Proof × Volume × Consistency = Brand'
-    const imageNames = formatSelectedImageNames(activeState.d2, activeState.d1)
-
-    const output = `# Proof Carousel Copy\n\n**Positioning formula:** ${formula}\n**Top objection:** ${topObjection}\n\n## 3 headline variants\n1. ${selectedClient.business_name} proof that turns attention into booked jobs\n2. ${topObjection} handled with real proof\n3. The outcome your market actually wants\n\n## 3 CTA variants\n1. Send the WhatsApp now\n2. Get the proof pack\n3. Book the next step\n\n## 3 subtext variants\n1. Local proof first, pitch second.\n2. Built from real work, not empty claims.\n3. Designed to move warm leads into action.\n\n## asset builder\nSelected images: ${imageNames.join(', ') || 'Choose proof images from Deliverable 1.'}\n\n## export labels\n- B/A-C1\n- B/A-C2\n- B/A-C4\n`
-
-    updateD2({
-      output,
-      exportLabels: ['B/A-C1', 'B/A-C2', 'B/A-C4'],
-    })
     await persistProofSprintDeliverable('D2')
     toast('Deliverable 2 generated ✓')
   }
 
   async function generateD3() {
     if (!selectedClient || !activeState) return
-    const colors = activeState.d3.brandColors.trim() || '#6A00F4, #9D4BFF, #EBD7FF'
-    const formula = activeState.d1.dominantFormula || 'Proof × Volume × Consistency = Brand'
-
-    const pain = [
-      `Pain angle 1: ${selectedClient.business_name} is the answer to the problem your buyer is already feeling.`,
-      'Pain angle 2: make the cost of inaction visible before the sale.',
-    ]
-    const outcome = [
-      'Outcome angle 1: show the result before the pitch.',
-      'Outcome angle 2: lead with what the buyer gets, not what you do.',
-    ]
-    const offer = [
-      'Offer angle 1: low-risk proof sprint entry.',
-      'Offer angle 2: clear next step, clear value, clear timeline.',
-    ]
-
-    const output = `# Ad Variants\n\n**D1 formula:** ${formula}\n**Brand colors:** ${colors}\n\n## pain based ads x2\n- ${pain[0]}\n- ${pain[1]}\n\n## outcome based ads x2\n- ${outcome[0]}\n- ${outcome[1]}\n\n## offer based ads x2\n- ${offer[0]}\n- ${offer[1]}\n\n## integration\nPush these prompts into AdCreative.ai and label exports by campaign usage.\n\n## download labels\n- Pain-01\n- Pain-02\n- Outcome-01\n- Outcome-02\n- Offer-01\n- Offer-02\n`
-
-    updateD3({ output, downloadLabels: ['Pain-01', 'Pain-02', 'Outcome-01', 'Outcome-02', 'Offer-01', 'Offer-02'] })
     await persistProofSprintDeliverable('D3')
     toast('Deliverable 3 generated ✓')
   }
 
   async function generateD4() {
     if (!selectedClient || !activeState) return
-    const guideTopic = pickLeadMagnetTopic(activeState.d4.vertical)
-    const output = `# Lead Magnet\n\n**Guide topic:** ${guideTopic}\n\n## full pdf copy\n${activeState.d4.pdfCopy || `Write the full PDF copy for ${guideTopic}.`}\n\n## cta\n${activeState.d4.cta || 'Book the next step on WhatsApp.'}\n\n## meta instant form fields\n${activeState.d4.formFields || '- Name\n- Phone\n- Service needed\n- Urgency\n- Area'}\n`
-    updateD4({ guideTopic, output })
     await persistProofSprintDeliverable('D4')
     toast('Deliverable 4 generated ✓')
   }
 
   async function generateD5() {
     if (!selectedClient || !activeState) return
-    const output = `# Meta Conversion Campaign Spec\n\n**Client:** ${selectedClient.business_name}\n\n## targeting\n${activeState.d5.targeting || 'Local radius + strong intent signals'}\n\n## age ranges\n${activeState.d5.ageRanges || '25-55'}\n\n## exclusions\n${activeState.d5.exclusions || 'Non-buyers, competitors, irrelevant job seekers'}\n\n## budgets\n${activeState.d5.budget || 'Split by ad set and scale winners only'}\n\n## keyword trigger\n${activeState.d5.keywordTrigger || 'Use a frictionless keyword trigger in WhatsApp'}\n\n## campaign 1 build sheet\nAd sets: Broad, Interest, Warm, Lookalike\n`
-    updateD5({ output })
     await persistProofSprintDeliverable('D5')
     toast('Deliverable 5 generated ✓')
   }
 
   async function generateD6() {
     if (!selectedClient || !activeState) return
-    const output = `# Meta Leads Campaign Spec\n\n**Client:** ${selectedClient.business_name}\n\n## fresh audiences\n${activeState.d6.freshAudiences || 'New audience expansion pool'}\n\n## non converters\n${activeState.d6.nonConverters || 'People who engaged but did not convert'}\n\n## lookalike 3–5%\n${activeState.d6.lookalike || 'Scale the best converting signals'}\n\n## lead form setup\n${activeState.d6.leadFormSetup || 'Name, phone, service interest, urgency, suburb'}\n\n## budgets\n${activeState.d6.budget || 'Test with a controlled budget and scale the winners'}\n`
-    updateD6({ output })
     await persistProofSprintDeliverable('D6')
     toast('Deliverable 6 generated ✓')
   }
 
   async function generateD7() {
     if (!selectedClient || !activeState) return
-    const output = `# WhatsApp DM Qualifier Script\n\n**Client:** ${selectedClient.business_name}\n\n## 6 message sales flow\n1. Welcome: ${activeState.d7.welcome || 'Thanks for reaching out. What do you need help with?'}\n2. Job type: ${activeState.d7.jobType || 'What type of work is it?'}\n3. Urgency: ${activeState.d7.urgency || 'How soon do you want this sorted?'}\n4. Area: ${activeState.d7.area || 'Which area are you in?'}\n5. Price bridge: ${activeState.d7.priceBridge || 'Here is the value bridge before we talk price.'}\n6. Booking close: ${activeState.d7.bookingClose || 'Let’s lock the booking in.'}\n\n## objection handler\n${activeState.d7.objectionHandler || 'Handle the common objection and return to the booking.'}\n\n## tyre kicker exit\n${activeState.d7.tyreKickerExit || 'Polite exit for non-serious enquiries.'}\n`
-    updateD7({ output })
     await persistProofSprintDeliverable('D7')
     toast('Deliverable 7 generated ✓')
   }
 
   async function generateD8() {
     if (!selectedClient || !activeState) return
-    const output = `# WhatsApp Conversion Flow Setup\n\n**Client:** ${selectedClient.business_name}\n\n## ManyChat logic builder\n- Keyword trigger: ${activeState.d8.keywordTrigger || activeState.d5.keywordTrigger || 'Use the campaign keyword from D5'}\n- Response tree: ${activeState.d8.responseTree || 'Map the decision tree from welcome to booking'}\n- Conditions: ${activeState.d8.conditions || 'Trigger response branches based on intent, area, and urgency'}\n- Phone capture: ${activeState.d8.phoneCapture || 'Collect phone number before the booking branch'}\n- Booking branch: ${activeState.d8.bookingBranch || 'Move qualified leads into a booking confirmation flow'}\n\n## outputs used\n- D5 campaign spec\n- D7 qualifier script\n\n## QA checklist\n- All branches tested: ${activeState.d8.qaBranches ? 'Yes' : 'No'}\n- Messages firing: ${activeState.d8.qaMessages ? 'Yes' : 'No'}\n- Data capture works: ${activeState.d8.qaData ? 'Yes' : 'No'}\n`
-    updateD8({ output })
     await persistProofSprintDeliverable('D8')
     toast('Deliverable 8 generated ✓')
   }

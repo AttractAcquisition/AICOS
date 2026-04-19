@@ -66,6 +66,23 @@ export type ProofSprintPromptRun = {
   error_message?: string | null
 }
 
+export type ProofSprintPromptTemplate = {
+  id: string
+  prompt_key: string
+  version: string
+  title: string
+  deliverable_key: string
+  system_prompt: string
+  user_prompt_template?: string | null
+  upstream_dependencies: string[]
+  output_tables: string[]
+  openclaw_required: boolean
+  cron_day?: number | null
+  cron_time_sast?: string | null
+  active: boolean
+  notes?: string | null
+}
+
 export function createProofSprintClient() {
   return createServiceClient()
 }
@@ -92,6 +109,40 @@ export async function loadLatestRow(table: string, clientId: string, deliverable
 
   if (error) throw error
   return data as Record<string, any> | null
+}
+
+export async function loadPromptTemplate(promptKey: string, version = '2.0') {
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from('proof_sprint_prompt_templates')
+    .select('*')
+    .eq('prompt_key', promptKey)
+    .eq('version', version)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (error) throw error
+  return (data ?? null) as ProofSprintPromptTemplate | null
+}
+
+function resolveTemplateValue(source: any, path: string) {
+  const parts = path.split('.')
+  let current = source
+  for (const part of parts) {
+    if (current == null) return undefined
+    current = current[part]
+  }
+  return current
+}
+
+export function renderPromptTemplate(template: string, context: Record<string, any>) {
+  return template.replace(/\{([a-zA-Z_][a-zA-Z0-9_.]*)\}/g, (match, token) => {
+    const value = resolveTemplateValue(context, token)
+    if (value === undefined || value === null) return match
+    if (typeof value === 'string') return value
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+    return JSON.stringify(value, null, 2)
+  })
 }
 
 export async function loadTableRows(table: string, clientId: string, options: { sprintDay?: number; upToDay?: number } = {}) {

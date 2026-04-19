@@ -7,9 +7,12 @@ import {
   loadLatestClientData,
   loadLatestRow,
   loadTableRows,
+  loadPromptTemplate,
   logPromptRun,
   openaiMarkdown,
+  PROOF_SPRINT_TABLES,
   queueAgentJob,
+  renderPromptTemplate,
   saveOutputRow,
   type DeliverableKey,
   type ProofSprintClientData,
@@ -241,6 +244,91 @@ function buildUserPrompt(deliverableKey: DeliverableKey, client: ProofSprintClie
   }, null, 2)
 }
 
+function buildPromptContext(client: ProofSprintClientData, deps: Record<string, any>, input: Record<string, any>, dailyMetricsRows: Record<string, any>[]) {
+  const clientData = {
+    ...client,
+    radius_km: client.radius_km ?? client.service_radius_km ?? client.radius ?? null,
+    average_job_value: client.average_job_value ?? client.average_job_value_zar ?? client.avg_job_value_zar ?? null,
+    proof_ad_count: client.proof_ad_count ?? input?.d1?.proofAdCount ?? input?.d1?.proof_ad_count ?? 3,
+    total_daily_budget: client.total_daily_budget ?? input?.d1?.totalDailyBudget ?? null,
+    auto_execute_optimisations: client.auto_execute_optimisations ?? input?.d1?.autoExecuteOptimisations ?? false,
+    portal_url: client.portal_url ?? input?.d1?.portalUrl ?? null,
+  }
+
+  const d1 = deps.D1?.output_json ?? {}
+  const d2 = deps.D2?.output_json ?? {}
+  const d3 = deps.D3?.output_json ?? {}
+  const d4 = deps.D4?.output_json ?? {}
+  const d5 = deps.D5?.output_json ?? {}
+  const d6 = deps.D6?.output_json ?? {}
+  const d7 = deps.D7?.output_json ?? {}
+  const d8 = deps.D8?.output_json ?? {}
+  const d9 = deps.D9?.output_json ?? {}
+  const d10 = deps.D10?.output_json ?? {}
+  const d11 = deps.D11?.output_json ?? {}
+  const d12 = deps.D12?.output_json ?? {}
+  const d13 = deps.D13?.output_json ?? {}
+  const d14 = deps.D14?.output_json ?? {}
+  const d15 = deps.D15?.output_json ?? {}
+
+  const dailyRows = dailyMetricsRows ?? []
+  const rowByDay = (day: number) => dailyRows.find(row => Number(row.sprint_day ?? row.day ?? 0) === day) ?? null
+  const sumRows = (rows: Record<string, any>[]) => rows.reduce((acc, row) => {
+    acc.total_spend += Number(row.blended_total_spend ?? row.total_spend ?? row.c1_spend ?? 0)
+    acc.total_dms += Number(row.c1_dms_started ?? row.total_dms ?? 0)
+    acc.total_leads += Number(row.c2_leads_generated ?? row.total_leads ?? 0)
+    return acc
+  }, { total_spend: 0, total_dms: 0, total_leads: 0 })
+  const first7 = dailyRows.filter(row => Number(row.sprint_day ?? row.day ?? 0) <= 7)
+  const cumulative = sumRows(dailyRows)
+  const first7Agg = sumRows(first7)
+
+  return {
+    client_id: client.client_id,
+    client_data: clientData,
+    business_name: clientData.business_name,
+    business_name_slug: String(clientData.business_name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+    location: clientData.location ?? null,
+    radius_km: clientData.radius_km ?? null,
+    ad_account_id: clientData.ad_account_id ?? input?.d1?.adAccountId ?? null,
+    today_date: new Date().toISOString().slice(0, 10),
+    date: new Date().toISOString().slice(0, 10),
+    timestamp: new Date().toISOString(),
+    sprint_day: typeof client.sprint_day_current === 'number' ? client.sprint_day_current : null,
+    proof_ad_count: clientData.proof_ad_count,
+    total_spend: cumulative.total_spend,
+    total_dms: cumulative.total_dms,
+    total_leads: cumulative.total_leads,
+    bookings: Number(client.client_reported_bookings_total ?? 0),
+    remaining_budget: Number(client.total_daily_budget ?? 0) > 0 ? Number(client.total_daily_budget) - cumulative.total_spend : null,
+    blended_cpr: cumulative.total_leads > 0 ? cumulative.total_spend / cumulative.total_leads : (cumulative.total_dms > 0 ? cumulative.total_spend / cumulative.total_dms : 0),
+    sprint_summary_line: `Spend ${cumulative.total_spend.toFixed(2)}, DMs ${cumulative.total_dms}, Leads ${cumulative.total_leads}`,
+    critical_flags: [],
+    d9_day1: rowByDay(1),
+    d9_day2: rowByDay(2),
+    d9_day3: rowByDay(3),
+    d9_days1_7_aggregate: first7Agg,
+    d9_cumulative: cumulative,
+    all_d9_rows: dailyRows,
+    bi: d1,
+    proof_ads: d2,
+    ad_variants: d3,
+    lead_magnets: d4,
+    c1_spec: d5,
+    c2_spec: d6,
+    whatsapp_script: d7,
+    manychat_flow: d8,
+    d9_report: d9,
+    d10_report: d10,
+    d11_report: d11,
+    d12_report: d12,
+    d13_report: d13,
+    d14_locked_dataset: d14,
+    d15_report: d15,
+    input_json: JSON.stringify(input, null, 2),
+  }
+}
+
 async function parseOrWrapMarkdown(title: string, raw: string) {
   try {
     const parsed = JSON.parse(raw)
@@ -278,6 +366,15 @@ async function savePromptRunBase(entry: {
     blocked_by: entry.blocked_by ?? [],
     error_message: entry.error_message ?? null,
   })
+}
+
+async function markPromptRun(promptRunId: string, patch: Record<string, any>) {
+  const supabase = createProofSprintClient()
+  const { error } = await supabase.from('proof_sprints_prompt_runs').update({
+    ...patch,
+    updated_at: new Date().toISOString(),
+  }).eq('id', promptRunId)
+  if (error) throw error
 }
 
 async function gatherDependencies(clientId: string, deliverableKey: DeliverableKey) {
@@ -325,6 +422,7 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
   const cfg = configFor(deliverableKey)
   const promptVersion = '2.0'
   const input = sanitizeSprintInput({ ...client.input_json, client_data: client })
+  const dailyMetricsRows = await loadTableRows('proof_sprint_daily_metrics', clientId).catch(() => [])
   const telegramBotToken = String(input?.d1?.telegramBotToken || client.input_json?.d1?.telegramBotToken || '').trim() || null
   const telegramChatId = String(input?.d1?.telegramChatId || client.input_json?.d1?.telegramChatId || Deno.env.get('OPENCLAW_TELEGRAM_CHAT_ID') || Deno.env.get('TELEGRAM_CHAT_ID') || '').trim() || null
   const promptRun = await savePromptRunBase({
@@ -444,8 +542,13 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
       return jsonResponse({ success: true, deliverable_key: deliverableKey, output, agent_job: job, status: 'queued' })
     }
 
-    const systemPrompt = buildSystemPrompt(deliverableKey, client, deps, input)
-    const userPrompt = buildUserPrompt(deliverableKey, client, deps, input)
+    const promptTemplate = await loadPromptTemplate(cfg.promptKey, promptVersion).catch(() => null)
+    const promptContext = buildPromptContext(client, deps, input, dailyMetricsRows)
+    const systemPrompt = promptTemplate?.system_prompt?.trim()
+      ? renderPromptTemplate(promptTemplate.system_prompt, promptContext)
+      : buildSystemPrompt(deliverableKey, client, deps, input)
+    const userPromptSource = promptTemplate?.user_prompt_template?.trim() || 'Use the input JSON below and return only the requested output.\n\n{input_json}'
+    const userPrompt = renderPromptTemplate(userPromptSource, promptContext)
     const raw = await openaiMarkdown(systemPrompt, userPrompt, options.model ?? cfg.model)
     const parsed = await parseOrWrapMarkdown(cfg.title, raw)
     const version = 1 + Number((await loadLatestRow(cfg.outputTable, clientId, deliverableKey))?.version ?? 0)
