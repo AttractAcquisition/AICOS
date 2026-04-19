@@ -249,7 +249,16 @@ function buildPromptContext(client: ProofSprintClientData, deps: Record<string, 
     ...client,
     radius_km: client.radius_km ?? client.service_radius_km ?? client.radius ?? null,
     average_job_value: client.average_job_value ?? client.average_job_value_zar ?? client.avg_job_value_zar ?? null,
+    location: client.location ?? input?.d1?.location ?? null,
+    service_vertical: client.service_vertical ?? input?.d1?.serviceVertical ?? input?.d1?.vertical ?? input?.d4?.vertical ?? null,
+    service_1: client.service_1 ?? input?.d1?.service1 ?? input?.d4?.vertical ?? null,
+    service_2: client.service_2 ?? input?.d1?.service2 ?? null,
+    service_3: client.service_3 ?? input?.d1?.service3 ?? null,
     proof_ad_count: client.proof_ad_count ?? input?.d1?.proofAdCount ?? input?.d1?.proof_ad_count ?? 3,
+    usp_list: client.usp_list ?? input?.d1?.uspList ?? null,
+    social_links: client.social_links ?? input?.d1?.socialLinks ?? null,
+    testimonials: client.testimonials ?? input?.d1?.testimonials ?? null,
+    promotions: client.promotions ?? input?.d1?.promotions ?? null,
     total_daily_budget: client.total_daily_budget ?? input?.d1?.totalDailyBudget ?? null,
     auto_execute_optimisations: client.auto_execute_optimisations ?? input?.d1?.autoExecuteOptimisations ?? false,
     portal_url: client.portal_url ?? input?.d1?.portalUrl ?? null,
@@ -310,13 +319,55 @@ function buildPromptContext(client: ProofSprintClientData, deps: Record<string, 
     d9_days1_7_aggregate: first7Agg,
     d9_cumulative: cumulative,
     all_d9_rows: dailyRows,
-    bi: d1,
-    proof_ads: d2,
-    ad_variants: d3,
-    lead_magnets: d4,
-    c1_spec: d5,
-    c2_spec: d6,
-    whatsapp_script: d7,
+    bi: {
+      ...d1,
+      business_name: d1.business_name ?? clientData.business_name,
+      service_vertical: d1.service_vertical ?? clientData.service_vertical ?? clientData.service_1 ?? clientData.business_name,
+      location: d1.location ?? clientData.location ?? null,
+      radius_km: d1.radius_km ?? clientData.radius_km ?? null,
+      service_1: d1.service_1 ?? clientData.service_1 ?? null,
+      service_2: d1.service_2 ?? clientData.service_2 ?? null,
+      service_3: d1.service_3 ?? clientData.service_3 ?? null,
+      average_job_value: d1.average_job_value ?? clientData.average_job_value ?? null,
+      usp_list: d1.usp_list ?? clientData.usp_list ?? null,
+      social_links: d1.social_links ?? clientData.social_links ?? null,
+      testimonials: d1.testimonials ?? clientData.testimonials ?? null,
+      promotions: d1.promotions ?? clientData.promotions ?? null,
+      client_whatsapp: d1.client_whatsapp ?? clientData.client_whatsapp ?? null,
+      icp_summary: d1.icp_summary ?? null,
+      top_objection: d1.top_objection ?? null,
+    },
+    proof_ads: {
+      ...d2,
+      variant_ids: d2.variant_ids ?? (Array.isArray(d2.copy_variants) ? d2.copy_variants.map((variant: any, index: number) => variant?.variant_id ?? `v${index + 1}`) : ['v1', 'v2', 'v3']),
+    },
+    ad_variants: {
+      ...d3,
+      pain_based: d3.pain_based ?? { variant_ids: ['pain_A', 'pain_B'] },
+      outcome_based: d3.outcome_based ?? { variant_ids: ['outcome_A', 'outcome_B'] },
+      offer_based: d3.offer_based ?? { variant_ids: ['offer_A', 'offer_B'] },
+    },
+    lead_magnets: {
+      ...d4,
+      creative_ids: d4.creative_ids ?? [],
+      form_id: d4.form_id ?? null,
+    },
+    c1_spec: {
+      ...d5,
+      campaign_name: d5.campaign_name ?? 'C1 Conversion',
+      keyword_trigger: d5.keyword_trigger ?? clientData.keyword_trigger ?? null,
+      auto_first_response: d5.auto_first_response ?? null,
+    },
+    c2_spec: {
+      ...d6,
+      campaign_name: d6.campaign_name ?? 'C2 Leads',
+      lead_form_setup: d6.lead_form_setup ?? null,
+    },
+    whatsapp_script: {
+      ...d7,
+      main_script: d7.main_script ?? {},
+      supplementary: d7.supplementary ?? {},
+    },
     manychat_flow: d8,
     d9_report: d9,
     d10_report: d10,
@@ -395,17 +446,46 @@ function hasBlockingDependencies(deliverableKey: DeliverableKey, deps: Record<st
   return blocked
 }
 
+function validateInputs(deliverableKey: DeliverableKey, input: Record<string, any>, client: ProofSprintClientData, telegramBotToken: string | null, telegramChatId: string | null) {
+  const missing: string[] = []
+  const d1 = input?.d1 ?? {}
+
+  if (deliverableKey === 'D1') {
+    if (!String(d1.transcript || '').trim()) missing.push('d1.transcript')
+    if (!String(d1.location || '').trim()) missing.push('d1.location')
+    if (!String(d1.serviceVertical || d1.vertical || '').trim()) missing.push('d1.serviceVertical')
+    if (!String(d1.service1 || '').trim()) missing.push('d1.service1')
+  }
+
+  const agentDeliverables = new Set<DeliverableKey>(['D2','D3','D5','D6','D8','D10','D11','D12','D13','D14','D15'])
+  if (agentDeliverables.has(deliverableKey)) {
+    if (!telegramBotToken) missing.push('d1.telegramBotToken')
+    if (!telegramChatId) missing.push('d1.telegramChatId')
+    if (!String(client.openclaw_agent_id || d1.openclawAgentId || '').trim()) missing.push('d1.openclawAgentId')
+  }
+
+  if (deliverableKey === 'D9') {
+    if (!String(client.c1_campaign_id || d1.c1CampaignId || '').trim()) missing.push('d1.c1CampaignId')
+    if (!String(client.c2_campaign_id || d1.c2CampaignId || '').trim()) missing.push('d1.c2CampaignId')
+    if (!String(client.meta_access_token_ref || d1.metaAccessTokenRef || '').trim()) missing.push('d1.metaAccessTokenRef')
+  }
+
+  return missing
+}
+
 export async function runProofSprintDeliverable(clientId: string, deliverableKey: DeliverableKey, options: { runId?: string; model?: string; forceAgent?: boolean; inputJson?: Record<string, any> } = {}) {
   let client = await loadLatestClientData(clientId)
   if (!client) {
     return jsonResponse({ success: false, error: 'Client sprint state not found' }, 404)
   }
 
-  if (options.inputJson && Object.keys(options.inputJson).length) {
+  const incomingInput = options.inputJson && Object.keys(options.inputJson).length ? options.inputJson : null
+
+  if (incomingInput) {
     const supabase = createProofSprintClient()
     const nextState = {
       client_id: clientId,
-      ...clientDataPatchFromInput(deliverableKey, options.inputJson),
+      ...clientDataPatchFromInput(deliverableKey, incomingInput),
     }
 
     await supabase.from('proof_sprint_client_data').upsert(nextState, {
@@ -421,10 +501,14 @@ export async function runProofSprintDeliverable(clientId: string, deliverableKey
 
   const cfg = configFor(deliverableKey)
   const promptVersion = '2.0'
-  const input = sanitizeSprintInput({ ...client.input_json, client_data: client })
+  const input = sanitizeSprintInput({ ...client.input_json, ...(incomingInput ?? {}), client_data: client })
   const dailyMetricsRows = await loadTableRows('proof_sprint_daily_metrics', clientId).catch(() => [])
   const telegramBotToken = String(input?.d1?.telegramBotToken || client.input_json?.d1?.telegramBotToken || '').trim() || null
   const telegramChatId = String(input?.d1?.telegramChatId || client.input_json?.d1?.telegramChatId || Deno.env.get('OPENCLAW_TELEGRAM_CHAT_ID') || Deno.env.get('TELEGRAM_CHAT_ID') || '').trim() || null
+  const missingInputs = validateInputs(deliverableKey, input, client, telegramBotToken, telegramChatId)
+  if (missingInputs.length) {
+    return jsonResponse({ success: false, error: 'Missing required inputs', deliverable_key: deliverableKey, missing: missingInputs }, 400)
+  }
   const promptRun = await savePromptRunBase({
     client_id: clientId,
     deliverable_key: deliverableKey,

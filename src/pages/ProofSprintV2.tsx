@@ -42,6 +42,17 @@ interface D1State {
   competitorAngle: string
   positioningGap: string
   dominantFormula: string
+  location: string
+  radiusKm: string
+  serviceVertical: string
+  service1: string
+  service2: string
+  service3: string
+  averageJobValue: string
+  uspList: string
+  socialLinks: string
+  testimonials: string
+  promotions: string
   sprintGoLiveDate: string
   c1CampaignId: string
   c2CampaignId: string
@@ -162,7 +173,7 @@ const APP_DEFS: { key: AppKey; label: string }[] = [
 ]
 
 const TAB_DEFS = [
-  { id: 1, title: 'Tool, Information & Assets', short: 'Inputs + Intelligence' },
+  { id: 1, title: 'Tool, Information & Assets', short: 'Intake + D1' },
   { id: 2, title: 'Before / After Proof Ads', short: 'Carousel Copy' },
   { id: 3, title: 'Ad Variants', short: 'AdCreative.ai Prompts' },
   { id: 4, title: 'Lead Magnet', short: 'PDF + Instant Form' },
@@ -197,6 +208,17 @@ function createInitialState(): SprintV2State {
       competitorAngle: '',
       positioningGap: '',
       dominantFormula: '',
+      location: '',
+      radiusKm: '',
+      serviceVertical: '',
+      service1: '',
+      service2: '',
+      service3: '',
+      averageJobValue: '',
+      uspList: '',
+      socialLinks: '',
+      testimonials: '',
+      promotions: '',
       sprintGoLiveDate: '',
       c1CampaignId: '',
       c2CampaignId: '',
@@ -1405,6 +1427,25 @@ export default function ProofSprintV2() {
                       placeholder="Paste meeting transcript here..."
                       style={{ resize: 'vertical', lineHeight: 1.65 }}
                     />
+                  </Panel>
+
+                  <Panel
+                    title="A0. Business Inputs"
+                    subtitle="These fields feed the positioning prompt, ad prompts, and the downstream campaign specs."
+                  >
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+                      <Field label="Location"><input className="input" value={activeState.d1.location} onChange={e => updateD1({ location: e.target.value })} placeholder="Cape Town" /></Field>
+                      <Field label="Radius (km)"><input className="input" value={activeState.d1.radiusKm} onChange={e => updateD1({ radiusKm: e.target.value })} placeholder="25" /></Field>
+                      <Field label="Service vertical"><input className="input" value={activeState.d1.serviceVertical} onChange={e => updateD1({ serviceVertical: e.target.value })} placeholder="Plumbing, landscaping, detailing..." /></Field>
+                      <Field label="Primary service"><input className="input" value={activeState.d1.service1} onChange={e => updateD1({ service1: e.target.value })} placeholder="Main service" /></Field>
+                      <Field label="Secondary service 1"><input className="input" value={activeState.d1.service2} onChange={e => updateD1({ service2: e.target.value })} placeholder="Optional" /></Field>
+                      <Field label="Secondary service 2"><input className="input" value={activeState.d1.service3} onChange={e => updateD1({ service3: e.target.value })} placeholder="Optional" /></Field>
+                      <Field label="Average job value"><input className="input" value={activeState.d1.averageJobValue} onChange={e => updateD1({ averageJobValue: e.target.value })} placeholder="15000" /></Field>
+                      <Field label="Unique selling points"><textarea className="input" rows={4} value={activeState.d1.uspList} onChange={e => updateD1({ uspList: e.target.value })} placeholder="Fast turnaround, guaranteed quality..." /></Field>
+                      <Field label="Social profiles"><textarea className="input" rows={4} value={activeState.d1.socialLinks} onChange={e => updateD1({ socialLinks: e.target.value })} placeholder="Instagram, Facebook, website URLs" /></Field>
+                      <Field label="Testimonials"><textarea className="input" rows={4} value={activeState.d1.testimonials} onChange={e => updateD1({ testimonials: e.target.value })} placeholder="Paste short reviews or quotes" /></Field>
+                      <Field label="Promotions / guarantees"><textarea className="input" rows={4} value={activeState.d1.promotions} onChange={e => updateD1({ promotions: e.target.value })} placeholder="Any offer, guarantee, or promo" /></Field>
+                    </div>
                   </Panel>
 
                   <Panel
