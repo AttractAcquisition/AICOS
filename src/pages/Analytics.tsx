@@ -249,7 +249,7 @@ export function Analytics() {
       {/* Horizontal bar chart — avg duration per SOP */}
       <Panel className="p-5">
         <SectionHeader title="Avg Response Duration by SOP (top 10)" />
-        <div style={{ height: Math.max(220, chartData.length * 36) }}>
+        <div style={{ height: Math.max(200, chartData.length * 36) }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
@@ -302,8 +302,8 @@ export function Analytics() {
           <SectionHeader title="SOP Breakdown" />
         </div>
 
-        {/* Table header */}
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-4 px-4 py-2 border-b border-base-700 text-[10px] font-mono uppercase text-base-500">
+        {/* Desktop table header */}
+        <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-4 px-4 py-2 border-b border-base-700 text-[10px] font-mono uppercase text-base-500">
           <span>SOP</span>
           <span className="text-right w-16">Model</span>
           <span className="text-right w-12">Calls</span>
@@ -314,50 +314,68 @@ export function Analytics() {
 
         <div className="divide-y divide-base-700/50">
           {stats.map(row => (
-            <div
-              key={row.sop_id}
-              className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-4 px-4 py-3 hover:bg-base-750 transition-colors items-center"
-            >
-              {/* SOP name */}
-              <div className="min-w-0">
-                <p className="text-sm text-white truncate">{row.sop_name}</p>
+            <div key={row.sop_id}>
+              {/* Desktop row */}
+              <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-4 px-4 py-3 hover:bg-base-750 transition-colors items-center">
+                <div className="min-w-0">
+                  <p className="text-sm text-white truncate">{row.sop_name}</p>
+                </div>
+                <span className={cn(
+                  'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border w-16 text-center',
+                  modelColor(row.model),
+                )}>
+                  {modelLabel(row.model)}
+                </span>
+                <span className="text-sm font-mono text-white text-right w-12">{row.total_calls}</span>
+                <span className={cn(
+                  'text-sm font-mono text-right w-16',
+                  row.avg_duration_ms > 5000 ? 'text-red-op'
+                  : row.avg_duration_ms > 3000 ? 'text-amber-op'
+                  : 'text-green-op',
+                )}>
+                  {fmtDuration(row.avg_duration_ms)}
+                </span>
+                <span className={cn(
+                  'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border w-16 text-center',
+                  successRateBadge(row.success_rate),
+                )}>
+                  {row.success_rate.toFixed(1)}%
+                </span>
+                <span className="text-sm font-mono text-base-400 text-right w-16">
+                  {fmtCost(row.est_cost_usd)}
+                </span>
               </div>
 
-              {/* Model badge */}
-              <span className={cn(
-                'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border w-16 text-center',
-                modelColor(row.model),
-              )}>
-                {modelLabel(row.model)}
-              </span>
-
-              {/* Call count */}
-              <span className="text-sm font-mono text-white text-right w-12">
-                {row.total_calls}
-              </span>
-
-              {/* Avg duration */}
-              <span className={cn(
-                'text-sm font-mono text-right w-16',
-                row.avg_duration_ms > 5000 ? 'text-red-op'
-                : row.avg_duration_ms > 3000 ? 'text-amber-op'
-                : 'text-green-op',
-              )}>
-                {fmtDuration(row.avg_duration_ms)}
-              </span>
-
-              {/* Success rate badge */}
-              <span className={cn(
-                'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border w-16 text-center',
-                successRateBadge(row.success_rate),
-              )}>
-                {row.success_rate.toFixed(1)}%
-              </span>
-
-              {/* Estimated cost */}
-              <span className="text-sm font-mono text-base-400 text-right w-16">
-                {fmtCost(row.est_cost_usd)}
-              </span>
+              {/* Mobile card */}
+              <div className="md:hidden px-4 py-3 hover:bg-base-750 transition-colors">
+                <div className="flex items-start justify-between gap-3 mb-1.5">
+                  <p className="text-sm text-white font-medium">{row.sop_name}</p>
+                  <span className={cn(
+                    'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0',
+                    successRateBadge(row.success_rate),
+                  )}>
+                    {row.success_rate.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className={cn(
+                    'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border',
+                    modelColor(row.model),
+                  )}>
+                    {modelLabel(row.model)}
+                  </span>
+                  <span className="text-[10px] font-mono text-base-500">{row.total_calls} calls</span>
+                  <span className={cn(
+                    'text-[10px] font-mono',
+                    row.avg_duration_ms > 5000 ? 'text-red-op'
+                    : row.avg_duration_ms > 3000 ? 'text-amber-op'
+                    : 'text-green-op',
+                  )}>
+                    avg {fmtDuration(row.avg_duration_ms)}
+                  </span>
+                  <span className="text-[10px] font-mono text-base-400">{fmtCost(row.est_cost_usd)}</span>
+                </div>
+              </div>
             </div>
           ))}
         </div>

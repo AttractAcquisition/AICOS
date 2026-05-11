@@ -8,8 +8,6 @@ import { supabase, updateCronStatus } from '@/lib/supabase'
 import type { CronJob } from '@/types'
 
 // ── SOP → Edge Function routing ───────────────────────────────────────────────
-// SOPs with a dedicated function are invoked directly.
-// All others fall back to run-sop with { sop_id } in the body.
 
 const SOP_FUNCTION: Record<string, string> = {
   '01': 'sop-01-outreach-drafts',
@@ -42,7 +40,7 @@ export function CronManager() {
   const queryClient         = useQueryClient()
   const { addNotification } = useAppStore()
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [running, setRunning]   = useState<string | null>(null)  // job.id currently executing
+  const [running, setRunning]   = useState<string | null>(null)
 
   // ── Query ────────────────────────────────────────────────────────────────────
 
@@ -86,7 +84,6 @@ export function CronManager() {
   const trigger = async (job: CronJob) => {
     setRunning(job.id)
 
-    // Optimistic: mark as running in cache
     queryClient.setQueryData<CronJob[]>(['cron_jobs'], old =>
       (old ?? []).map(j => j.id === job.id ? { ...j, last_status: 'running' as const } : j),
     )
@@ -106,7 +103,6 @@ export function CronManager() {
       lastError = err instanceof Error ? err.message : String(err)
     }
 
-    // Persist run result to cron_schedule when connected to a real DB
     if (isLive) {
       await supabase
         .from('cron_schedule')
@@ -161,7 +157,8 @@ export function CronManager() {
           {isLoading && <Spinner size={14} />}
           <div className="px-3 py-1.5 rounded bg-base-800 border border-base-600 flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-green-op animate-pulse" />
-            <span className="text-xs font-mono text-green-op">SCHEDULER ONLINE</span>
+            <span className="text-xs font-mono text-green-op hidden sm:inline">SCHEDULER ONLINE</span>
+            <span className="text-xs font-mono text-green-op sm:hidden">ONLINE</span>
           </div>
         </div>
       </div>
@@ -175,7 +172,7 @@ export function CronManager() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Active Jobs',       value: isLoading ? '—' : activeCount,              color: 'text-green-op' },
           { label: 'Paused',            value: isLoading ? '—' : jobs.length - activeCount, color: 'text-amber-op' },
@@ -191,7 +188,9 @@ export function CronManager() {
 
       {/* Job list */}
       <Panel className="overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-3 items-center px-4 py-2.5 bg-base-800 border-b border-base-600">
+
+        {/* ── Desktop table header ── */}
+        <div className="hidden md:grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-3 items-center px-4 py-2.5 bg-base-800 border-b border-base-600">
           {['SOP', 'Name / Schedule', 'Status', 'Last Run', 'Runs', 'Actions'].map(h => (
             <span key={h} className="text-[10px] font-mono text-base-500 uppercase">{h}</span>
           ))}
@@ -203,19 +202,19 @@ export function CronManager() {
 
           return (
             <div key={job.id} className="border-b border-base-700 last:border-0">
+
+              {/* ── Desktop row ── */}
               <div
                 className={cn(
-                  'grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-3 items-center px-4 py-3',
+                  'hidden md:grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-3 items-center px-4 py-3',
                   'hover:bg-base-750 transition-colors cursor-pointer',
                   !job.is_active && 'opacity-50',
                   job.last_status === 'failure' && 'bg-red-op/5',
                 )}
                 onClick={() => setExpanded(isExpanded ? null : job.id)}
               >
-                {/* SOP number */}
                 <span className="text-xs font-mono font-bold text-electric w-8">{job.sop_id}</span>
 
-                {/* Name + schedule */}
                 <div className="min-w-0">
                   <p className="text-sm text-white font-medium truncate">{job.sop_name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
@@ -226,7 +225,6 @@ export function CronManager() {
                   </div>
                 </div>
 
-                {/* Active / paused / running */}
                 <div className="flex items-center gap-1.5">
                   {isRunning ? (
                     <span className="flex items-center gap-1.5 text-[10px] font-mono text-electric">
@@ -244,7 +242,6 @@ export function CronManager() {
                   )}
                 </div>
 
-                {/* Last run */}
                 <div className="min-w-[100px]">
                   {job.last_run ? (
                     <div className="flex items-center gap-1.5">
@@ -266,10 +263,8 @@ export function CronManager() {
                   )}
                 </div>
 
-                {/* Run count */}
                 <span className="text-sm font-mono text-base-400 w-8 text-center">{job.run_count}</span>
 
-                {/* Actions — stop propagation so clicks don't toggle expand */}
                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => trigger(job)}
@@ -300,9 +295,75 @@ export function CronManager() {
                 </div>
               </div>
 
-              {/* Expanded detail row */}
+              {/* ── Mobile card ── */}
+              <div
+                className={cn(
+                  'md:hidden p-4 space-y-3',
+                  !job.is_active && 'opacity-50',
+                  job.last_status === 'failure' && 'bg-red-op/5',
+                )}
+              >
+                {/* Top row: SOP + name + status */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-xs font-mono font-bold text-electric flex-shrink-0">SOP {job.sop_id}</span>
+                      {isRunning ? (
+                        <span className="text-[10px] font-mono text-electric flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-electric animate-pulse" /> RUNNING
+                        </span>
+                      ) : job.is_active ? (
+                        <span className="text-[10px] font-mono text-green-op">ACTIVE</span>
+                      ) : (
+                        <span className="text-[10px] font-mono text-amber-op">PAUSED</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-white font-medium">{job.sop_name}</p>
+                    <p className="text-[10px] text-base-500 font-mono mt-0.5">{job.schedule_label}</p>
+                  </div>
+                </div>
+
+                {/* Last run */}
+                <div className="flex items-center gap-2 text-[11px] font-mono text-base-500">
+                  {job.last_run ? (
+                    <>
+                      {job.last_status === 'success' && <CheckCircle size={11} className="text-green-op" />}
+                      {job.last_status === 'failure' && <XCircle size={11} className="text-red-op" />}
+                      <span>Last run: {formatRelative(job.last_run)}</span>
+                      <span>· {job.run_count} runs</span>
+                    </>
+                  ) : (
+                    <span>Never run · {job.run_count} runs</span>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => trigger(job)}
+                    disabled={running !== null}
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 min-h-[44px]"
+                  >
+                    {isRunning ? <Spinner size={12} /> : <Play size={12} />}
+                    {isRunning ? 'Running…' : 'Run Now'}
+                  </Button>
+                  <Button
+                    onClick={() => toggleMutation.mutate({ id: job.id, isActive: !job.is_active })}
+                    disabled={toggleMutation.isPending && toggleMutation.variables?.id === job.id}
+                    variant={job.is_active ? 'ghost' : 'secondary'}
+                    size="sm"
+                    className="flex-1 min-h-[44px]"
+                  >
+                    {job.is_active ? <><Pause size={12} /> Pause</> : <><Play size={12} /> Resume</>}
+                  </Button>
+                </div>
+              </div>
+
+              {/* ── Expanded detail (desktop) ── */}
               {isExpanded && (
-                <div className="px-4 pb-4 bg-base-850/50 border-t border-base-700">
+                <div className="hidden md:block px-4 pb-4 bg-base-850/50 border-t border-base-700">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
                     <div>
                       <p className="text-[10px] text-base-500 font-mono uppercase mb-1">Cron Expression</p>

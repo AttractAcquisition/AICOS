@@ -6,6 +6,8 @@ interface AppStore {
   // Sidebar
   sidebarCollapsed: boolean
   setSidebarCollapsed: (v: boolean) => void
+  mobileSidebarOpen: boolean
+  setMobileSidebarOpen: (v: boolean) => void
 
   // Alerts
   alerts: AIAlert[]
@@ -35,6 +37,8 @@ interface AppStore {
 export const useAppStore = create<AppStore>((set, get) => ({
   sidebarCollapsed: false,
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
+  mobileSidebarOpen: false,
+  setMobileSidebarOpen: (v) => set({ mobileSidebarOpen: v }),
 
   alerts: [],
   resolveAlert: (id) =>

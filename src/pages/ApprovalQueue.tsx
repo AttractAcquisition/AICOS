@@ -154,7 +154,7 @@ function ApprovalCard({ item, onApprove, onReject, isPending }: {
             )}
 
             {!isActioned && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={() => onApprove(item.id)} variant="success" size="sm" disabled={isPending}>
                   <CheckCircle size={12} /> Approve & Send
                 </Button>

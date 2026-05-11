@@ -116,8 +116,8 @@ function TagPill({ tag }: { tag: string }) {
 
 function PreviewModal({ entry, onClose }: { entry: KBEntry; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-base-950/80 backdrop-blur-sm">
-      <div className="flex flex-col w-full max-w-4xl h-[80vh] bg-base-900 border border-base-600 rounded-lg shadow-panel overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-base-950/80 backdrop-blur-sm">
+      <div className="flex flex-col w-full h-full md:h-[80vh] md:max-w-4xl bg-base-900 md:border border-t border-base-600 md:rounded-lg shadow-panel overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-base-600 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -317,8 +317,8 @@ export function KnowledgeBase() {
   return (
     <div className="space-y-5 animate-fade-up">
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4">
+        <div className="flex-1 min-w-0">
           <h2 className="font-display font-bold text-white text-xl uppercase tracking-wide">
             Knowledge Base
           </h2>
@@ -329,7 +329,7 @@ export function KnowledgeBase() {
           </p>
         </div>
         {/* Search */}
-        <div className="relative w-56 flex-shrink-0">
+        <div className="relative w-full md:w-56 md:flex-shrink-0">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-500 pointer-events-none" />
           <input
             type="text"
@@ -337,7 +337,7 @@ export function KnowledgeBase() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={cn(
-              'w-full pl-8 pr-3 py-1.5 rounded bg-base-800 border border-base-600',
+              'w-full pl-8 pr-3 py-2 md:py-1.5 min-h-[44px] md:min-h-0 rounded bg-base-800 border border-base-600',
               'text-sm text-white placeholder:text-base-600',
               'focus:outline-none focus:border-electric/50 transition-colors',
             )}

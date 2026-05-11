@@ -54,7 +54,7 @@ export function SOPControl() {
           return (
             <Panel key={tier} className={cn('p-3 border cursor-pointer transition-all', colorMap[tier], tierFilter === tier && 'ring-1 ring-current')}
               onClick={() => setTierFilter(tierFilter === tier ? 'All' : tier)}>
-              <p className="text-[10px] font-mono uppercase text-current opacity-70">{tier === 'AUTO' ? '🟢 Fully Automated' : tier === 'ASSISTED' ? '🟡 AI-Assisted' : '🔴 Human-Led'}</p>
+              <p className="text-[10px] font-mono uppercase text-current opacity-70">{tier === 'AUTO' ? '🟢 Fully Auto' : tier === 'ASSISTED' ? '🟡 Assisted' : '🔴 Human-Led'}</p>
               <p className="font-display font-bold text-3xl text-current">{counts[tier]}</p>
               <p className="text-[10px] text-current opacity-50 font-mono">SOPs</p>
             </Panel>
@@ -62,24 +62,24 @@ export function SOPControl() {
         })}
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
+      {/* Filters — stack vertically on mobile */}
+      <div className="flex flex-col md:flex-row gap-3">
         <div className="relative">
           <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-500" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search SOPs..."
-            className="pl-7 pr-3 py-1.5 bg-base-800 border border-base-600 rounded text-sm text-white placeholder-base-600 focus:outline-none focus:border-electric/60 w-52"
+            className="w-full md:w-52 pl-7 pr-3 py-2 md:py-1.5 min-h-[44px] md:min-h-0 bg-base-800 border border-base-600 rounded text-sm text-white placeholder-base-600 focus:outline-none focus:border-electric/60"
           />
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {domains.map(d => (
             <button
               key={d}
               onClick={() => setDomainFilter(d)}
               className={cn(
-                'px-2.5 py-1.5 rounded text-[10px] font-mono uppercase transition-all',
+                'px-2.5 py-1.5 min-h-[44px] md:min-h-0 rounded text-[10px] font-mono uppercase transition-all',
                 domainFilter === d
                   ? 'bg-electric/15 text-electric border border-electric/25'
                   : 'text-base-500 hover:text-white border border-transparent hover:border-base-600'
@@ -91,9 +91,11 @@ export function SOPControl() {
         </div>
       </div>
 
-      {/* SOP table */}
+      {/* SOP list */}
       <Panel className="overflow-hidden">
-        <div className="grid grid-cols-[32px_40px_1fr_80px_80px_110px_90px] gap-2 items-center px-4 py-2.5 bg-base-800 border-b border-base-600">
+
+        {/* Desktop table header */}
+        <div className="hidden md:grid grid-cols-[32px_40px_1fr_80px_80px_110px_90px] gap-2 items-center px-4 py-2.5 bg-base-800 border-b border-base-600">
           {['', 'SOP#', 'Name & Description', 'Domain', 'Tier', 'Last Run', 'Action'].map(h => (
             <span key={h} className="text-[10px] font-mono text-base-500 uppercase">{h}</span>
           ))}
@@ -103,55 +105,83 @@ export function SOPControl() {
           {filtered.map(sop => {
             const isRunning = running === sop.id
             return (
-              <div
-                key={sop.id}
-                className={cn(
-                  'grid grid-cols-[32px_40px_1fr_80px_80px_110px_90px] gap-2 items-center px-4 py-3',
-                  'hover:bg-base-750 transition-colors',
-                  !sop.is_active && 'opacity-50'
-                )}
-              >
-                {/* Active dot */}
-                <StatusDot status={isRunning ? 'running' : sop.is_active ? 'active' : 'idle'} />
+              <div key={sop.id} className={cn(!sop.is_active && 'opacity-50')}>
 
-                {/* Number */}
-                <span className="text-xs font-mono font-bold text-electric">{sop.num}</span>
-
-                {/* Name */}
-                <div className="min-w-0">
-                  <p className="text-sm text-white font-medium truncate">{sop.name}</p>
-                  <p className="text-[10px] text-base-500 truncate mt-0.5">{sop.description}</p>
+                {/* Desktop row */}
+                <div
+                  className={cn(
+                    'hidden md:grid grid-cols-[32px_40px_1fr_80px_80px_110px_90px] gap-2 items-center px-4 py-3',
+                    'hover:bg-base-750 transition-colors',
+                  )}
+                >
+                  <StatusDot status={isRunning ? 'running' : sop.is_active ? 'active' : 'idle'} />
+                  <span className="text-xs font-mono font-bold text-electric">{sop.num}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{sop.name}</p>
+                    <p className="text-[10px] text-base-500 truncate mt-0.5">{sop.description}</p>
+                  </div>
+                  <span className="text-[10px] text-base-500 font-mono">{sop.domain}</span>
+                  <TierBadge tier={sop.tier} />
+                  <span className="text-[10px] font-mono text-base-500">
+                    {sop.last_run ? formatRelative(sop.last_run) : '—'}
+                  </span>
+                  <Button
+                    onClick={() => trigger(sop)}
+                    variant="ghost"
+                    size="sm"
+                    disabled={isRunning || sop.tier === 'HUMAN' || !sop.is_active}
+                  >
+                    {isRunning ? (
+                      <span className="flex items-center gap-1 text-electric">
+                        <div className="w-2 h-2 rounded-full border border-electric border-t-transparent animate-spin" />
+                        Running
+                      </span>
+                    ) : sop.tier === 'HUMAN' ? (
+                      <span className="text-base-600">Manual</span>
+                    ) : (
+                      <><Play size={10} /> Run Now</>
+                    )}
+                  </Button>
                 </div>
 
-                {/* Domain */}
-                <span className="text-[10px] text-base-500 font-mono">{sop.domain}</span>
+                {/* Mobile card */}
+                <div className="md:hidden p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <StatusDot status={isRunning ? 'running' : sop.is_active ? 'active' : 'idle'} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-xs font-mono font-bold text-electric flex-shrink-0">#{sop.num}</span>
+                          <TierBadge tier={sop.tier} />
+                        </div>
+                        <p className="text-sm text-white font-medium">{sop.name}</p>
+                        <p className="text-[10px] text-base-500 mt-0.5">{sop.description}</p>
+                        <p className="text-[10px] text-base-600 font-mono mt-1">
+                          {sop.domain} · {sop.last_run ? formatRelative(sop.last_run) : 'Never run'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => trigger(sop)}
+                      variant="ghost"
+                      size="sm"
+                      disabled={isRunning || sop.tier === 'HUMAN' || !sop.is_active}
+                      className="flex-shrink-0 min-h-[44px]"
+                    >
+                      {isRunning ? (
+                        <span className="flex items-center gap-1 text-electric">
+                          <div className="w-2 h-2 rounded-full border border-electric border-t-transparent animate-spin" />
+                          Running
+                        </span>
+                      ) : sop.tier === 'HUMAN' ? (
+                        <span className="text-base-600">Manual</span>
+                      ) : (
+                        <><Play size={10} /> Run</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
 
-                {/* Tier */}
-                <TierBadge tier={sop.tier} />
-
-                {/* Last run */}
-                <span className="text-[10px] font-mono text-base-500">
-                  {sop.last_run ? formatRelative(sop.last_run) : '—'}
-                </span>
-
-                {/* Action */}
-                <Button
-                  onClick={() => trigger(sop)}
-                  variant="ghost"
-                  size="sm"
-                  disabled={isRunning || sop.tier === 'HUMAN' || !sop.is_active}
-                >
-                  {isRunning ? (
-                    <span className="flex items-center gap-1 text-electric">
-                      <div className="w-2 h-2 rounded-full border border-electric border-t-transparent animate-spin" />
-                      Running
-                    </span>
-                  ) : sop.tier === 'HUMAN' ? (
-                    <span className="text-base-600">Manual</span>
-                  ) : (
-                    <><Play size={10} /> Run Now</>
-                  )}
-                </Button>
               </div>
             )
           })}

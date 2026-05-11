@@ -224,7 +224,7 @@ function StageDrawer({
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full z-50 w-full max-w-[420px] flex flex-col bg-base-900 border-l border-base-600 shadow-2xl animate-slide-in-right">
+      <div className="fixed right-0 top-0 h-full z-50 w-full md:max-w-[420px] flex flex-col bg-base-900 border-l border-base-600 shadow-2xl animate-slide-in-right">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-base-600">
           <div>
@@ -443,7 +443,7 @@ export function Pipeline() {
                   )}
                 >
                   <span className={cn(
-                    'text-xs font-mono w-28 flex-shrink-0 text-left transition-colors',
+                    'text-xs font-mono w-20 md:w-28 flex-shrink-0 text-left transition-colors',
                     isActive ? 'text-electric' : 'text-base-500 group-hover:text-base-300',
                   )}>
                     {label}
@@ -478,7 +478,8 @@ export function Pipeline() {
       {/* Weekly conversion chart */}
       <Panel className="p-5">
         <SectionHeader title="Weekly Conversion Trend" />
-        <div className="h-56">
+        <div className="overflow-x-auto">
+        <div className="h-56 min-w-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chart} barGap={2} barCategoryGap={8}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1C1C2E" vertical={false} />
@@ -504,6 +505,7 @@ export function Pipeline() {
               <Bar dataKey="closed"    fill="#00E676" name="Closed"    radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
         </div>
       </Panel>
     </div>

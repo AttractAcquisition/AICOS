@@ -295,7 +295,7 @@ export function Finance() {
       {/* Revenue vs Expenses chart */}
       <Panel className="p-5">
         <SectionHeader title="Income vs Expenses — Last 6 Months" />
-        <div className="h-56">
+        <div className="h-[200px] md:h-56">
           {chartLoading ? (
             <div className="h-full flex items-center justify-center">
               <Spinner size={20} />
@@ -353,25 +353,47 @@ export function Finance() {
               <p className="text-[10px] text-base-600 font-mono mt-1">Run SOP 56 to populate finance data</p>
             </div>
           ) : ledgerRows.map(row => (
-                <div key={row.id} className="flex items-center gap-4 px-4 py-3 hover:bg-base-750 transition-colors">
-                  <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', row.entry_type === 'income' ? 'bg-green-op' : 'bg-red-op')} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white">{row.client_name || row.description || row.notes}</p>
-                    <p className="text-[10px] text-base-500 font-mono">
-                      {row.invoice_number} · {formatDate(row.invoice_date)}
-                    </p>
+            <div key={row.id} className="hover:bg-base-750 transition-colors">
+              {/* Desktop row */}
+              <div className="hidden md:flex items-center gap-4 px-4 py-3">
+                <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', row.entry_type === 'income' ? 'bg-green-op' : 'bg-red-op')} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white">{row.client_name || row.description || row.notes}</p>
+                  <p className="text-[10px] text-base-500 font-mono">
+                    {row.invoice_number} · {formatDate(row.invoice_date)}
+                  </p>
+                </div>
+                {row.status && row.status !== 'cancelled' && (
+                  <span className={cn('text-[10px] font-mono font-bold px-2 py-0.5 rounded border', statusBadgeClass(row.status))}>
+                    {statusLabel(row.status)}
+                  </span>
+                )}
+                <span className={cn('font-mono font-bold text-sm', row.entry_type === 'income' ? 'text-green-op' : 'text-red-op')}>
+                  {row.entry_type === 'income' ? '+' : '-'}{formatCurrency(row.amount)}
+                </span>
+              </div>
+              {/* Mobile card */}
+              <div className="md:hidden px-4 py-3 space-y-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5', row.entry_type === 'income' ? 'bg-green-op' : 'bg-red-op')} />
+                    <p className="text-sm text-white truncate">{row.client_name || row.description || row.notes}</p>
                   </div>
-                  {row.status && row.status !== 'cancelled' && (
-                    <span className={cn('text-[10px] font-mono font-bold px-2 py-0.5 rounded border', statusBadgeClass(row.status))}>
-                      {statusLabel(row.status)}
-                    </span>
-                  )}
-                  <span className={cn('font-mono font-bold text-sm', row.entry_type === 'income' ? 'text-green-op' : 'text-red-op')}>
+                  <span className={cn('font-mono font-bold text-sm flex-shrink-0', row.entry_type === 'income' ? 'text-green-op' : 'text-red-op')}>
                     {row.entry_type === 'income' ? '+' : '-'}{formatCurrency(row.amount)}
                   </span>
                 </div>
-              ))
-          }
+                <div className="flex items-center gap-2 ml-3.5">
+                  <p className="text-[10px] text-base-500 font-mono">{row.invoice_number} · {formatDate(row.invoice_date)}</p>
+                  {row.status && row.status !== 'cancelled' && (
+                    <span className={cn('text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border', statusBadgeClass(row.status))}>
+                      {statusLabel(row.status)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </Panel>
     </div>

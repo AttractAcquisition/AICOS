@@ -56,7 +56,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         }
       </div>
 
-      <div className={cn('flex flex-col max-w-[80%]', isUser && 'items-end')}>
+      <div className={cn('flex flex-col max-w-[90%] md:max-w-[80%]', isUser && 'items-end')}>
         {/* Tool calls */}
         {msg.tool_calls && msg.tool_calls.length > 0 && (
           <div className="mb-2 space-y-1">
@@ -189,7 +189,7 @@ export function Chat() {
             <p className="text-base-500 text-sm text-center max-w-sm mb-6">
               Ask anything about your business. I have live access to your leads, sprints, clients, finance, and all 58 SOPs.
             </p>
-            <div className="grid grid-cols-2 gap-2 w-full max-w-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-lg">
               {SUGGESTED.map((s) => (
                 <button
                   key={s}
@@ -239,7 +239,7 @@ export function Chat() {
               disabled={isThinking}
               className={cn(
                 'flex-1 bg-transparent resize-none text-sm text-white placeholder-base-600',
-                'focus:outline-none font-body leading-relaxed',
+                'focus:outline-none font-body leading-relaxed min-h-[44px]',
                 'disabled:opacity-50'
               )}
             />

@@ -181,25 +181,25 @@ export function Dashboard() {
   return (
     <div className="space-y-5 animate-fade-up">
       {/* Briefing header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-1 h-5 bg-electric rounded-full" />
-            <h1 className="font-display font-bold text-white text-xl uppercase tracking-wide">
+            <div className="w-1 h-5 bg-electric rounded-full flex-shrink-0" />
+            <h1 className="font-display font-bold text-white text-lg md:text-xl uppercase tracking-wide truncate">
               Command Centre
             </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-green-op/10 text-green-op border border-green-op/20">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-green-op/10 text-green-op border border-green-op/20 flex-shrink-0">
               LIVE
             </span>
           </div>
-          <p className="text-xs text-base-500 font-mono ml-3">
+          <p className="text-xs text-base-500 font-mono ml-3 truncate">
             Briefing generated {formatDate(b.generated_at)} · SOP 58
             {liveBriefing ? '' : ' · (no briefing yet — click Run Briefing)'}
           </p>
         </div>
-        <Button onClick={runBriefing} variant="secondary" size="sm" disabled={refreshing}>
+        <Button onClick={runBriefing} variant="secondary" size="sm" disabled={refreshing} className="flex-shrink-0">
           {refreshing ? <Spinner size={12} /> : <RefreshCw size={12} />}
-          {refreshing ? 'Running SOP 58...' : 'Run Briefing'}
+          <span className="hidden sm:inline">{refreshing ? 'Running SOP 58...' : 'Run Briefing'}</span>
         </Button>
       </div>
 
@@ -319,7 +319,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* AI Activity Log */}
+      {/* AI Activity Log + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Panel className="p-4">
           <SectionHeader title="Overnight AI Activity" action={
@@ -402,80 +402,82 @@ export function Dashboard() {
           </Button>
         </div>
 
-        {/* Column headers */}
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-4 py-2 border-b border-base-700 text-[10px] font-mono uppercase text-base-500">
-          <span>SOP / Domain</span>
-          <span className="w-28 text-right">Last Run</span>
-          <span className="w-16 text-center">Status</span>
-          <span className="w-28 text-right">Next Run</span>
-          <span className="w-16 text-right">Avg Dur.</span>
-        </div>
+        <div className="overflow-x-auto">
+          {/* Column headers */}
+          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-4 py-2 border-b border-base-700 text-[10px] font-mono uppercase text-base-500 min-w-[520px]">
+            <span>SOP / Domain</span>
+            <span className="w-28 text-right">Last Run</span>
+            <span className="w-16 text-center">Status</span>
+            <span className="w-28 text-right">Next Run</span>
+            <span className="w-16 text-right">Avg Dur.</span>
+          </div>
 
-        <div className="divide-y divide-base-700/50">
-          {cronLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse">
-                <div className="flex-1 h-3 bg-base-750 rounded" />
-                <div className="w-24 h-3 bg-base-750 rounded" />
-                <div className="w-6 h-3 bg-base-750 rounded" />
-                <div className="w-24 h-3 bg-base-750 rounded" />
-                <div className="w-10 h-3 bg-base-750 rounded" />
-              </div>
-            ))
-          ) : cronJobs.length === 0 ? (
-            <p className="text-xs text-base-500 font-mono py-6 text-center px-4">
-              No active cron jobs found — add jobs in Cron Manager
-            </p>
-          ) : (
-            cronJobs.map(job => (
-              <div
-                key={job.id}
-                className={cn(
-                  'grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-4 py-3 items-center border-l-2 hover:bg-base-750 transition-colors',
-                  jobRowStyle(job),
-                )}
-              >
-                {/* SOP name + domain */}
-                <div className="min-w-0">
-                  <p className="text-sm text-white truncate">{job.sop_name}</p>
-                  <p className="text-[10px] font-mono text-base-500">{job.domain}</p>
+          <div className="divide-y divide-base-700/50 min-w-[520px]">
+            {cronLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse">
+                  <div className="flex-1 h-3 bg-base-750 rounded" />
+                  <div className="w-24 h-3 bg-base-750 rounded" />
+                  <div className="w-6 h-3 bg-base-750 rounded" />
+                  <div className="w-24 h-3 bg-base-750 rounded" />
+                  <div className="w-10 h-3 bg-base-750 rounded" />
                 </div>
+              ))
+            ) : cronJobs.length === 0 ? (
+              <p className="text-xs text-base-500 font-mono py-6 text-center px-4">
+                No active cron jobs found — add jobs in Cron Manager
+              </p>
+            ) : (
+              cronJobs.map(job => (
+                <div
+                  key={job.id}
+                  className={cn(
+                    'grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-4 py-3 items-center border-l-2 hover:bg-base-750 transition-colors',
+                    jobRowStyle(job),
+                  )}
+                >
+                  {/* SOP name + domain */}
+                  <div className="min-w-0">
+                    <p className="text-sm text-white truncate">{job.sop_name}</p>
+                    <p className="text-[10px] font-mono text-base-500">{job.domain}</p>
+                  </div>
 
-                {/* Last run */}
-                <span className="text-xs font-mono text-base-400 text-right w-28">
-                  {job.last_run ? formatDate(job.last_run) : '—'}
-                </span>
+                  {/* Last run */}
+                  <span className="text-xs font-mono text-base-400 text-right w-28">
+                    {job.last_run ? formatDate(job.last_run) : '—'}
+                  </span>
 
-                {/* Status dot + label */}
-                <div className="flex items-center justify-center gap-1.5 w-16">
-                  <span className={cn('w-2 h-2 rounded-full flex-shrink-0', statusDotClass(job.last_status))} />
-                  <span className={cn(
-                    'text-[10px] font-mono font-bold',
-                    job.last_status === 'success' ? 'text-green-op'
-                    : job.last_status === 'failure' ? 'text-red-op'
-                    : job.last_status === 'running' ? 'text-electric'
-                    : 'text-base-500',
-                  )}>
-                    {job.last_status?.toUpperCase() ?? '—'}
+                  {/* Status dot + label */}
+                  <div className="flex items-center justify-center gap-1.5 w-16">
+                    <span className={cn('w-2 h-2 rounded-full flex-shrink-0', statusDotClass(job.last_status))} />
+                    <span className={cn(
+                      'text-[10px] font-mono font-bold',
+                      job.last_status === 'success' ? 'text-green-op'
+                      : job.last_status === 'failure' ? 'text-red-op'
+                      : job.last_status === 'running' ? 'text-electric'
+                      : 'text-base-500',
+                    )}>
+                      {job.last_status?.toUpperCase() ?? '—'}
+                    </span>
+                  </div>
+
+                  {/* Next run */}
+                  <span className="text-xs font-mono text-base-400 text-right w-28">
+                    {job.next_run ? formatDate(job.next_run) : '—'}
+                  </span>
+
+                  {/* Avg duration */}
+                  <span className="text-xs font-mono text-base-500 text-right w-16">
+                    {job.avg_duration_ms
+                      ? job.avg_duration_ms < 1000
+                        ? `${job.avg_duration_ms}ms`
+                        : `${(job.avg_duration_ms / 1000).toFixed(1)}s`
+                      : '—'}
                   </span>
                 </div>
-
-                {/* Next run */}
-                <span className="text-xs font-mono text-base-400 text-right w-28">
-                  {job.next_run ? formatDate(job.next_run) : '—'}
-                </span>
-
-                {/* Avg duration */}
-                <span className="text-xs font-mono text-base-500 text-right w-16">
-                  {job.avg_duration_ms
-                    ? job.avg_duration_ms < 1000
-                      ? `${job.avg_duration_ms}ms`
-                      : `${(job.avg_duration_ms / 1000).toFixed(1)}s`
-                    : '—'}
-                </span>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </Panel>
     </div>

@@ -651,7 +651,7 @@ export function Clients() {
       )}
 
       {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard
           label="Active Clients"
           value={isLoading ? '—' : active}

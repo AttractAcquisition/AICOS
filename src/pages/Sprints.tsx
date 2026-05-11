@@ -232,8 +232,8 @@ export function Sprints() {
         </Panel>
       )}
 
-      {/* Summary stat cards */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Summary stat cards — 3 columns on mobile (as per spec) */}
+      <div className="grid grid-cols-3 gap-2 md:gap-3">
         <StatCard label="On Track"  value={isLoading ? '—' : onTrack}  color="green" icon={<Target    size={14} />} />
         <StatCard label="At Risk"   value={isLoading ? '—' : atRisk}   color="amber" icon={<TrendingUp size={14} />} />
         <StatCard label="Off Target" value={isLoading ? '—' : offTrack} color="red"   icon={<DollarSign size={14} />} />

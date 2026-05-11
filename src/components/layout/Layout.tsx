@@ -16,16 +16,18 @@ export function Layout() {
       <main
         className={cn(
           'transition-all duration-300 pt-14',
-          sidebarCollapsed ? 'pl-[60px]' : 'pl-[220px]'
+          // Mobile: no left offset (sidebar is an overlay)
+          // Desktop: account for sidebar width
+          sidebarCollapsed ? 'lg:pl-[60px]' : 'lg:pl-[220px]'
         )}
       >
-        <div className="p-5 min-h-[calc(100vh-56px)]">
+        <div className="px-4 md:px-5 py-4 md:py-5 min-h-[calc(100vh-56px)]">
           <Outlet />
         </div>
       </main>
 
       {/* Toast notifications */}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
+      <div className="fixed bottom-4 right-4 md:bottom-5 md:right-5 z-[60] flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-2rem)]">
         {notifications.map((n) => (
           <div
             key={n.id}
