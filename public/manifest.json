@@ -1,15 +1,15 @@
 {
   "name": "AA Operator",
   "short_name": "AA Operator",
-  "description": "Attract Acquisition AI Control Panel",
+  "description": "AI-powered control panel for Attract Acquisition. Monitor sprints, manage prospects, approve outreach, and run 58 automated SOPs from one command centre.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#05050A",
   "theme_color": "#00D4FF",
   "orientation": "portrait",
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
   ]
 }
