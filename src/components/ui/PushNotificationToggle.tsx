@@ -57,7 +57,7 @@ export function PushNotificationToggle() {
       className={
         'hidden md:flex items-center justify-center p-1.5 rounded transition-colors ' +
         (subscribed
-          ? 'text-[#00D4FF] hover:bg-[#00D4FF]/10'
+          ? 'text-electric hover:bg-electric/10'
           : 'text-base-500 hover:text-white hover:bg-base-700')
       }
     >

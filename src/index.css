@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --electric: #00D4FF;
-  --amber: #FFB800;
-  --red: #FF4560;
+  --electric: #FF8000;
+  --amber: #FF5C30;
+  --red: #FF4444;
   --green: #00E676;
 }
 
@@ -19,7 +19,7 @@ html {
 
 body {
   font-family: 'Barlow', sans-serif;
-  background-color: #05050A;
+  background-color: #0A0800;
   color: #E2E8F0;
   margin: 0;
   padding: 0;
@@ -28,15 +28,15 @@ body {
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #0A0A12; }
-::-webkit-scrollbar-thumb { background: #252540; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #00D4FF40; }
+::-webkit-scrollbar-track { background: #110D00; }
+::-webkit-scrollbar-thumb { background: #3D3010; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #FF800040; }
 
 /* Selection */
-::selection { background: rgba(0, 212, 255, 0.2); color: #fff; }
+::selection { background: rgba(255, 128, 0, 0.2); color: #fff; }
 
 /* Focus */
-:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.6); outline-offset: 2px; }
+:focus-visible { outline: 1px solid rgba(255, 128, 0, 0.6); outline-offset: 2px; }
 
 /* Panel base */
 .panel {
@@ -46,7 +46,7 @@ body {
 
 /* Electric border effect */
 .border-electric {
-  border-color: rgba(0, 212, 255, 0.3);
+  border-color: rgba(255, 128, 0, 0.3);
 }
 
 /* Status dot pulse */
@@ -82,17 +82,17 @@ body {
 
 /* Grid background overlay */
 .grid-bg {
-  background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(255,128,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,128,0,0.03) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 /* Glowing text */
 .text-glow-electric {
-  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  text-shadow: 0 0 20px rgba(255, 128, 0, 0.5);
 }
 .text-glow-amber {
-  text-shadow: 0 0 20px rgba(255, 184, 0, 0.5);
+  text-shadow: 0 0 20px rgba(255, 92, 48, 0.5);
 }
 
 /* Animated border */
@@ -102,7 +102,7 @@ body {
 
 /* Loading bar */
 .loading-bar {
-  background: linear-gradient(90deg, transparent, #00D4FF, transparent);
+  background: linear-gradient(90deg, transparent, #FF8000, transparent);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -116,11 +116,29 @@ body {
 .cursor-blink::after {
   content: '|';
   animation: blink 1.2s step-end infinite;
-  color: #00D4FF;
+  color: #FF8000;
   font-weight: 300;
 }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+/* Section label with trailing horizontal rule — matches COS design language */
+.section-label-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #FF8000;
+}
+.section-label-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 128, 0, 0.18);
 }
