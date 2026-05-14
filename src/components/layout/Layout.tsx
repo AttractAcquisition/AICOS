@@ -21,7 +21,7 @@ export function Layout() {
           sidebarCollapsed ? 'lg:pl-[60px]' : 'lg:pl-[220px]'
         )}
       >
-        <div className="px-4 md:px-5 py-4 md:py-5 min-h-[calc(100vh-56px)]">
+        <div className="px-4 md:px-5 py-4 md:py-5 min-h-[calc(100vh-56px)] page-fade">
           <Outlet />
         </div>
       </main>

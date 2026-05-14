@@ -27,10 +27,10 @@ body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #110D00; }
-::-webkit-scrollbar-thumb { background: #3D3010; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #FF800040; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0A0800; }
+::-webkit-scrollbar-thumb { background: #3D3010; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,128,0,0.4); }
 
 /* Selection */
 ::selection { background: rgba(255, 128, 0, 0.2); color: #fff; }
@@ -141,4 +141,32 @@ body {
   flex: 1;
   height: 1px;
   background: rgba(255, 128, 0, 0.18);
+}
+
+/* Skeleton loader — amber-tinted shimmer */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #1C1400 25%,
+    #2A2000 50%,
+    #1C1400 75%
+  );
+  background-size: 400px 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+/* Page fade — applied to main content area on route change */
+.page-fade {
+  animation: pageFade 0.15s ease both;
+}
+
+@keyframes pageFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
