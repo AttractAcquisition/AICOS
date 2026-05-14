@@ -21,24 +21,14 @@ const SOP_NAME    = 'SOP 01 — WhatsApp Outreach Drafts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface EnrichmentData {
-  review_count:  number | null
-  trading_since: string | null
-  has_website:   boolean
-  niche_fit:     boolean
-  summary:       string
-  sources:       string[]
-}
-
 interface ProspectRow {
   id:              string
-  name:            string
-  company:         string
+  owner_name:      string | null
+  business_name:   string
   phone:           string | null
-  niche:           string | null
-  location:        string | null
-  quality_score:   number
-  enrichment_data: EnrichmentData | null
+  vertical:        string | null
+  city:            string | null
+  icp_total_score: number | null
 }
 
 interface DraftedMessage {
@@ -57,15 +47,15 @@ interface ConversationRow {
 async function draftMessages(prospects: ProspectRow[]): Promise<DraftedMessage[]> {
   const context = prospects.map(p => ({
     id:               p.id,
-    name:             p.name,
-    company:          p.company,
-    niche:            p.niche ?? 'local business',
-    location:         p.location ?? null,
-    quality_score:    p.quality_score,
-    trading_since:    p.enrichment_data?.trading_since ?? null,
-    review_count:     p.enrichment_data?.review_count  ?? null,
-    has_website:      p.enrichment_data?.has_website   ?? null,
-    business_summary: p.enrichment_data?.summary       ?? null,
+    name:             p.owner_name ?? p.business_name,
+    company:          p.business_name,
+    niche:            p.vertical ?? 'local business',
+    location:         p.city ?? null,
+    quality_score:    p.icp_total_score,
+    trading_since:    null,
+    review_count:     null,
+    has_website:      null,
+    business_summary: null,
   }))
 
   const response = await anthropic.messages.create({
@@ -137,9 +127,9 @@ Deno.serve(async (req) => {
     // ── 1. Fetch staged prospects ordered by quality descending ───────────────
     const { data: rawProspects, error: fetchError } = await supabase
       .from('prospects')
-      .select('id, name, company, phone, niche, location, quality_score, enrichment_data')
+      .select('id, owner_name, business_name, phone, vertical, city, icp_total_score')
       .eq('status', 'staged')
-      .order('quality_score', { ascending: false })
+      .order('icp_total_score', { ascending: false })
       .limit(BATCH_LIMIT)
 
     if (fetchError) throw new Error(`fetch prospects: ${fetchError.message}`)
@@ -166,7 +156,7 @@ Deno.serve(async (req) => {
     if (suppressedCount > 0) {
       console.log(
         `[${SOP_NAME}] ${suppressedCount} suppressed number(s) skipped: ` +
-        suppressedProspects.map(p => p.phone ?? p.company).join(', '),
+        suppressedProspects.map(p => p.phone ?? p.business_name).join(', '),
       )
     }
 
@@ -208,11 +198,11 @@ Deno.serve(async (req) => {
 
     if (prospectsNeedingConv.length > 0) {
       const newConvRows = prospectsNeedingConv.map(d => ({
-        prospect_id: d.prospect_id,
-        phone:       d.prospect.phone ?? '',
-        source:      'outreach_campaign',
-        stage:       'new',
-        status:      'open',
+        prospect_id:  d.prospect_id,
+        phone_number: d.prospect.phone ?? '',
+        source:       'outreach_campaign',
+        stage:        'new',
+        status:       'open',
       }))
 
       const { data: createdConvs, error: convInsertError } = await supabase
@@ -237,10 +227,10 @@ Deno.serve(async (req) => {
       prospect_id:     d.prospect_id,
       conversation_id: convMap.get(d.prospect_id) ?? null,
       phone_number:    d.prospect.phone ?? '',
-      contact_name:    d.prospect.name,
-      company_name:    d.prospect.company,
+      contact_name:    d.prospect.owner_name ?? d.prospect.business_name,
+      company_name:    d.prospect.business_name,
       drafted_message: d.message,
-      quality_score:   d.prospect.quality_score,
+      quality_score:   d.prospect.icp_total_score ?? 0,
       status:          'pending_review',
     }))
 

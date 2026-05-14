@@ -29,9 +29,9 @@ interface ClassifyResult {
 
 interface ProspectRow {
   id:               string
-  name:             string
-  company:          string
-  quality_score:    number
+  owner_name:       string | null
+  business_name:    string
+  icp_total_score:  number | null
   last_reply_text:  string | null
 }
 
@@ -41,14 +41,15 @@ interface ConversationRow {
 }
 
 // ─── Stage + needs_human mapping ─────────────────────────────────────────────
-// Returns the conversation fields to set for a given classification.
-// stage = null means "do not change stage" (cold — already at 'replied').
+// Maps classification → whatsapp_conversations stage (Outreach-System vocabulary).
+// Live constraint: new, needs_reply, qualified, quoted, booked, won, lost, bad_fit
+// stage = null means "do not change stage" (cold — leave at current stage).
 
 const CONV_UPDATES: Record<Classification, { needs_human: boolean; stage: string | null }> = {
   warm:           { needs_human: true,  stage: 'qualified' },
   cold:           { needs_human: false, stage: null        },
   not_interested: { needs_human: false, stage: 'lost'      },
-  unsubscribed:   { needs_human: false, stage: 'blocked'   },
+  unsubscribed:   { needs_human: false, stage: 'bad_fit'   },
 }
 
 // ─── Haiku classifier ─────────────────────────────────────────────────────────
@@ -100,7 +101,7 @@ Deno.serve(async (req) => {
     // ── 1. Fetch unclassified replied prospects ───────────────────────────────
     const { data: rawProspects, error: fetchError } = await supabase
       .from('prospects')
-      .select('id, name, company, quality_score, last_reply_text')
+      .select('id, owner_name, business_name, icp_total_score, last_reply_text')
       .eq('status', 'replied')
       .is('reply_classification', null)
       .limit(50)
@@ -144,7 +145,7 @@ Deno.serve(async (req) => {
 
       let result: ClassifyResult
       try {
-        result = await classifyReply(replyText, prospect.name, prospect.company)
+        result = await classifyReply(replyText, prospect.owner_name ?? prospect.business_name, prospect.business_name)
       } catch {
         continue
       }
@@ -189,7 +190,8 @@ Deno.serve(async (req) => {
 
       // 3c. Queue warm replies for human review via approval_queue
       if (classification === 'warm') {
-        const priority = (prospect.quality_score ?? 0) >= 7 ? 'high' : 'medium'
+        const displayName = prospect.owner_name ?? prospect.business_name
+        const priority = (prospect.icp_total_score ?? 0) >= 15 ? 'high' : 'medium'
         await supabase.from('approval_queue').insert({
           sop_id:       SOP_ID,
           sop_name:     SOP_NAME,
@@ -198,9 +200,9 @@ Deno.serve(async (req) => {
           content_type: 'whatsapp_message',
           content_id:   crypto.randomUUID(),
           content: {
-            title:     `Warm reply from ${prospect.name} at ${prospect.company}`,
+            title:     `Warm reply from ${displayName} at ${prospect.business_name}`,
             body:      replyText,
-            recipient: prospect.name,
+            recipient: displayName,
             metadata: {
               classification,
               reason,
@@ -215,7 +217,7 @@ Deno.serve(async (req) => {
         supabase.functions.invoke('send-push-notification', {
           body: {
             title: '🔥 Warm lead',
-            body:  `${prospect.name} — ${prospect.company} replied`,
+            body:  `${displayName} — ${prospect.business_name} replied`,
             url:   '/approvals',
             tag:   `warm-lead-${prospect.id}`,
           },

@@ -1,3 +1,7 @@
+-- SUPERSEDED: whatsapp_conversations is owned by Outreach-System repo.
+-- This migration no-ops in production (table already exists with correct schema).
+-- Do not apply on fresh installs — run Outreach-System migrations first.
+-- Live column is 'phone_number' (not 'phone'). Live stage constraint uses Outreach-System vocabulary.
 -- ─── whatsapp_conversations ───────────────────────────────────────────────────
 -- One row per prospect-conversation thread.
 -- Created by SOP 01 when an outreach draft is generated for a prospect who has

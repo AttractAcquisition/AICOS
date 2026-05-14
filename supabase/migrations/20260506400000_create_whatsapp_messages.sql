@@ -1,3 +1,7 @@
+-- SUPERSEDED: whatsapp_messages is owned by Outreach-System repo.
+-- This migration no-ops in production (table already exists with correct schema).
+-- Do not apply on fresh installs — run Outreach-System migrations first.
+-- Live column is 'body' (not 'message_body'). Live table includes conversation_id NOT NULL FK.
 -- ─── whatsapp_messages ───────────────────────────────────────────────────────
 -- Stores every inbound and outbound WhatsApp message linked to a prospect.
 -- Inbound rows are written by server.js when Meta delivers a webhook event.
