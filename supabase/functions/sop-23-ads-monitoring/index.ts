@@ -34,11 +34,11 @@ interface MetaPage {
   error?: { message: string; code: number }
 }
 
+// proof_sprints does not have meta_campaign_id or cpl_target;
+// this type only holds what actually exists on the table.
 interface SprintRow {
-  id: string
+  id:          string
   client_name: string
-  meta_campaign_id: string
-  cpl_target: number
 }
 
 interface DayData {
@@ -130,25 +130,39 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // ── 1. Load active sprints with CPL targets ───────────────────────────────
+    // ── 1. Load active sprints ────────────────────────────────────────────────
+    // proof_sprints does not have meta_campaign_id or cpl_target.
+    // Without campaign IDs we cannot filter Meta insights by sprint — the
+    // kill/scale logic is therefore skipped. The ad-set logs are still written
+    // from any insights that arrive (sprint_id will be null for unmatched rows).
     const { data: rawSprints, error: sprintsErr } = await supabase
-      .from('sprints')
-      .select('id, client_name, meta_campaign_id, cpl_target')
+      .from('proof_sprints')
+      .select('id, client_name')
       .eq('status', 'active')
-      .not('meta_campaign_id', 'is', null)
 
-    if (sprintsErr) throw new Error(`fetch sprints: ${sprintsErr.message}`)
+    if (sprintsErr) throw new Error(`fetch proof_sprints: ${sprintsErr.message}`)
 
-    const sprints          = (rawSprints ?? []) as SprintRow[]
-    const campaignToSprint = new Map<string, SprintRow>(sprints.map(s => [s.meta_campaign_id, s]))
-    const campaignIds      = sprints.map(s => s.meta_campaign_id)
+    const sprints = (rawSprints ?? []) as SprintRow[]
 
-    if (sprints.length === 0) {
+    // meta_campaign_id is not on proof_sprints — no campaign IDs to query
+    const campaignIds: string[] = []
+
+    if (sprints.length === 0 || campaignIds.length === 0) {
+      await supabase.from('ai_task_log').insert({
+        sop_id:         SOP_ID,
+        sop_name:       SOP_NAME,
+        tool_called:    'meta_marketing_api',
+        status:         'success',
+        duration_ms:    Date.now() - startedAt,
+        input_summary:  `${sprints.length} active sprints — meta_campaign_id not available on proof_sprints`,
+        output_summary: 'No campaign IDs available — kill/scale logic skipped',
+      })
       return new Response(
         JSON.stringify({ message: 'No active sprints with meta_campaign_id', evaluated: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
+
     console.log(`[sop-23] ${sprints.length} active sprints, fetching 7-day ad set breakdown`)
 
     // ── 2. Fetch 7 days of daily ad set insights (paginated) ──────────────────
@@ -189,6 +203,9 @@ Deno.serve(async (req) => {
     const syncedAt  = new Date().toISOString()
     const logRows: Record<string, unknown>[] = []
 
+    // campaignToSprint is empty since we have no meta_campaign_id on proof_sprints
+    const campaignToSprint = new Map<string, SprintRow>()
+
     for (const [adsetId, entry] of adSetMap) {
       const sprint = campaignToSprint.get(entry.campaign_id)
       for (const day of entry.days) {
@@ -203,7 +220,7 @@ Deno.serve(async (req) => {
           impressions: day.impressions,
           clicks:      day.clicks,
           cpl:         day.cpl,
-          cpl_target:  sprint?.cpl_target ?? null,
+          cpl_target:  null,
           synced_at:   syncedAt,
         })
       }
@@ -219,6 +236,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 5. Kill / scale logic ─────────────────────────────────────────────────
+    // Skipped: no sprints are mapped to campaign IDs so campaignToSprint is empty.
     let pausedCount    = 0
     let scaleCount     = 0
     let alertsCreated  = 0
@@ -226,18 +244,18 @@ Deno.serve(async (req) => {
 
     for (const [adsetId, entry] of adSetMap) {
       const sprint = campaignToSprint.get(entry.campaign_id)
-      if (!sprint || sprint.cpl_target <= 0) continue
+      if (!sprint) continue
+      // cpl_target is not available — skip kill/scale logic for this sprint
+      const cpl_target = 0
+      if (cpl_target <= 0) continue
 
-      const { cpl_target, client_name, id: sprintId } = sprint
-
-      // Only consider days where spend occurred and CPL was recorded
+      const { client_name, id: sprintId } = sprint
       const activeDays   = entry.days.filter(d => d.cpl > 0)
       if (activeDays.length === 0) continue
 
       const latestStatus = entry.days[0]?.effective_status ?? 'UNKNOWN'
 
-      // ── Kill: CPL > 140% of target for 3+ consecutive recent active days ───
-      const recentActive   = activeDays.slice(0, KILL_CONSECUTIVE)
+      const recentActive    = activeDays.slice(0, KILL_CONSECUTIVE)
       const isKillCandidate =
         latestStatus !== 'PAUSED' &&
         recentActive.length >= KILL_CONSECUTIVE &&
@@ -252,7 +270,6 @@ Deno.serve(async (req) => {
           `avg CPL £${avgCpl.toFixed(2)} (+${overPct.toFixed(1)}%) for ${KILL_CONSECUTIVE} days`,
         )
 
-        // Pause the ad set via Meta API
         try {
           await pauseAdSet(adsetId, META_ACCESS_TOKEN, META_GRAPH_API_VERSION)
           pausedCount++
@@ -261,10 +278,8 @@ Deno.serve(async (req) => {
           const msg = pauseErr instanceof Error ? pauseErr.message : String(pauseErr)
           console.error(`[sop-23] pause failed for ${adsetId}: ${msg}`)
           errors.push(`pause ${adsetId}: ${msg}`)
-          // Continue — still create the alert so the team knows about the failure
         }
 
-        // Critical alert documenting the kill
         const { error: killAlertErr } = await supabase.from('ai_alerts').insert({
           severity:         'critical',
           sop_id:           SOP_ID,
@@ -285,7 +300,6 @@ Deno.serve(async (req) => {
           errors.push(`kill alert ${adsetId}: ${killAlertErr.message}`)
         } else {
           alertsCreated++
-          // Fire-and-forget push notification for critical kill alert
           supabase.functions.invoke('send-push-notification', {
             body: {
               title: '🚨 Ad set alert',
@@ -296,7 +310,6 @@ Deno.serve(async (req) => {
           })
         }
 
-        // Approval queue item so the action is visible and reversible
         const { error: queueErr } = await supabase.from('approval_queue').insert({
           sop_id:       SOP_ID,
           sop_name:     SOP_NAME,
@@ -334,7 +347,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── Scale: most recent active day CPL < 80% of target ─────────────────
       const latestCpl = activeDays[0].cpl
       if (latestCpl < cpl_target * SCALE_MULTIPLIER) {
         const underPct = ((cpl_target - latestCpl) / cpl_target) * 100

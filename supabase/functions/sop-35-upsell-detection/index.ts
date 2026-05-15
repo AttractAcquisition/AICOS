@@ -13,7 +13,6 @@ const SOP_NAME  = 'SOP 35 — Upsell Detection'
 const UPSELL_THRESHOLD = 8
 
 // ─── Tier ladder ──────────────────────────────────────────────────────────────
-// Prices match sop-15 (the canonical offer-generation source).
 
 interface UpsellPath {
   current_label:  string
@@ -62,15 +61,29 @@ const UPSELL_PATHS: Record<string, UpsellPath> = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ClientRow {
-  id:           string
-  name:         string
-  status:       string
-  tier:         string | null
-  niche:        string | null
-  contact_name: string | null
-  created_at:   string
+  id:            string
+  business_name: string
+  status:        string
+  tier:          string | null
+  niche:         string | null
+  contact_name:  string | null
+  created_at:    string
 }
 
+// Raw proof_sprints columns
+interface RawSprintRow {
+  id:                string
+  client_name:       string
+  sprint_number:     number | null
+  leads_generated:   number | null
+  actual_ad_spend:   number | null
+  client_ad_budget:  number | null
+  total_impressions: number | null
+  link_clicks:       number | null
+  start_date:        string
+}
+
+// Normalised shape used for scoring
 interface SprintRow {
   id:              string
   client_name:     string
@@ -85,8 +98,8 @@ interface SprintRow {
 }
 
 interface SprintLogRow {
-  sprint_id:    string
-  logged_at:    string
+  sprint_id:     string
+  logged_at:     string
   health_status: string
 }
 
@@ -110,6 +123,28 @@ interface ProposalOutput {
   report_html:  string
 }
 
+// ─── Normalise ────────────────────────────────────────────────────────────────
+
+function normalise(raw: RawSprintRow): SprintRow {
+  const leadsGen = raw.leads_generated ?? 0
+  const spend    = raw.actual_ad_spend  ?? 0
+  const dayMs    = Date.now() - new Date(raw.start_date).getTime()
+  const dayNum   = raw.sprint_number ?? Math.max(Math.floor(dayMs / 86_400_000), 1)
+  const cpl      = leadsGen > 0 ? spend / leadsGen : 0
+  return {
+    id:              raw.id,
+    client_name:     raw.client_name,
+    day_number:      dayNum,
+    leads_generated: leadsGen,
+    leads_target:    0,
+    spend,
+    cpl,
+    cpl_target:      0,
+    roas:            0,
+    roas_target:     0,
+  }
+}
+
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
 function scoreClient(
@@ -129,7 +164,7 @@ function scoreClient(
     else if (pct >= 50) { sprintCompletion = 1; reasons.push(`leads ${pct.toFixed(0)}% of target (+1)`) }
     else                { reasons.push(`leads ${pct.toFixed(0)}% of target (+0)`) }
   } else {
-    reasons.push('no active sprint (+0)')
+    reasons.push(sprint ? 'no lead target set (+0)' : 'no active sprint (+0)')
   }
 
   // 2. CPL vs target (0–3)
@@ -141,7 +176,7 @@ function scoreClient(
     else if (ratio <= 1.25) { cplPerformance = 1; reasons.push(`CPL ${((ratio - 1) * 100).toFixed(0)}% over target (+1)`) }
     else                    { reasons.push(`CPL ${((ratio - 1) * 100).toFixed(0)}% over target (+0)`) }
   } else {
-    reasons.push('no CPL data (+0)')
+    reasons.push('no CPL target data (+0)')
   }
 
   // 3. Satisfaction signals (0–2): open alerts + recent health distribution
@@ -211,16 +246,15 @@ async function generateUpsellProposal(
 
   const perfContext = sprint
     ? [
-        `Current CPL: £${sprint.cpl.toFixed(2)} vs £${sprint.cpl_target} target`,
-        `ROAS: ${sprint.roas.toFixed(2)}x vs ${sprint.roas_target}x target`,
-        `Leads this sprint: ${sprint.leads_generated} / ${sprint.leads_target} target`,
+        `Leads this sprint: ${sprint.leads_generated}`,
         `Total ad spend: £${sprint.spend.toFixed(2)}`,
+        `CPL: £${sprint.cpl.toFixed(2)}`,
         `Sprint day: ${sprint.day_number}/14`,
       ].join('\n')
     : 'No active sprint data available.'
 
   const prompt = [
-    `Client: ${client.name}`,
+    `Client: ${client.business_name}`,
     `Current tier: ${path.current_label}`,
     `Niche: ${client.niche ?? 'local service business'}`,
     `Months as client: ${monthsActive}`,
@@ -288,9 +322,9 @@ async function generateUpsellProposal(
   let nextTier   = path.next_tier
   let monthlyFee = path.monthly_fee
   let commitment = path.commitment
-  let tp1        = `${client.name} is achieving strong results on ${path.current_label} — scaling up is logical next step`
+  let tp1        = `${client.business_name} is achieving strong results on ${path.current_label} — scaling up is the logical next step`
   let tp2        = `${path.next_label} adds ${path.key_additions[0].toLowerCase()}`
-  let tp3        = `Investment is ${path.monthly_fee}/mo — justified by current ROAS trajectory`
+  let tp3        = `Investment is ${path.monthly_fee}/mo — justified by current spend trajectory`
 
   if (jsonLine) {
     try {
@@ -302,16 +336,16 @@ async function generateUpsellProposal(
       if (parsed.tp2) tp2 = String(parsed.tp2)
       if (parsed.tp3) tp3 = String(parsed.tp3)
     } catch {
-      console.warn(`[sop-35] PROPOSAL_JSON parse failed for ${client.name} — using defaults`)
+      console.warn(`[sop-35] PROPOSAL_JSON parse failed for ${client.business_name} — using defaults`)
     }
   } else {
-    console.warn(`[sop-35] No PROPOSAL_JSON found for ${client.name}`)
+    console.warn(`[sop-35] No PROPOSAL_JSON found for ${client.business_name}`)
   }
 
   const htmlMatch  = raw.match(/<!DOCTYPE html>[\s\S]*/i)
   const reportHtml = htmlMatch
     ? htmlMatch[0]
-    : `<!DOCTYPE html><html><body><p>Offer document generation failed for ${client.name}.</p></body></html>`
+    : `<!DOCTYPE html><html><body><p>Offer document generation failed for ${client.business_name}.</p></body></html>`
 
   return { next_tier: nextTier, monthly_fee: monthlyFee, commitment, tp1, tp2, tp3, report_html: reportHtml }
 }
@@ -337,9 +371,9 @@ Deno.serve(async (req) => {
     // ── 1. Fetch all active clients ───────────────────────────────────────────
     const { data: rawClients, error: clientsErr } = await supabase
       .from('clients')
-      .select('id, name, status, tier, niche, contact_name, created_at')
+      .select('id, business_name, status, tier, niche, contact_name, created_at')
       .eq('status', 'active')
-      .order('name')
+      .order('business_name')
 
     if (clientsErr) throw new Error(`fetch clients: ${clientsErr.message}`)
 
@@ -364,13 +398,13 @@ Deno.serve(async (req) => {
 
     // ── 2. Bulk-fetch active sprints indexed by client_name ───────────────────
     const { data: rawSprints, error: sprintsErr } = await supabase
-      .from('sprints')
-      .select('id, client_name, day_number, leads_generated, leads_target, spend, cpl, cpl_target, roas, roas_target')
+      .from('proof_sprints')
+      .select('id, client_name, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
       .eq('status', 'active')
 
-    if (sprintsErr) throw new Error(`fetch sprints: ${sprintsErr.message}`)
+    if (sprintsErr) throw new Error(`fetch proof_sprints: ${sprintsErr.message}`)
 
-    const sprints        = (rawSprints ?? []) as SprintRow[]
+    const sprints        = ((rawSprints ?? []) as RawSprintRow[]).map(normalise)
     const sprintByClient = new Map<string, SprintRow>(
       sprints.map(s => [s.client_name.toLowerCase().trim(), s]),
     )
@@ -381,12 +415,12 @@ Deno.serve(async (req) => {
 
     if (sprintIds.length > 0) {
       const { data: rawLogs, error: logsErr } = await supabase
-        .from('sprint_logs')
+        .from('sprint_daily_log')
         .select('sprint_id, logged_at, health_status')
         .in('sprint_id', sprintIds)
         .gte('logged_at', thirtyDaysAgo)
 
-      if (logsErr) throw new Error(`fetch sprint_logs: ${logsErr.message}`)
+      if (logsErr) throw new Error(`fetch sprint_daily_log: ${logsErr.message}`)
 
       for (const log of (rawLogs ?? []) as SprintLogRow[]) {
         const arr = logsBySprint.get(log.sprint_id) ?? []
@@ -411,7 +445,6 @@ Deno.serve(async (req) => {
     }
 
     // ── 5. Bulk-fetch clients that already have an open upsell alert ──────────
-    // Prevents re-alerting on the same client every weekly run.
     const { data: existingUpsellAlerts, error: upsellAlertsErr } = await supabase
       .from('ai_alerts')
       .select('client_name')
@@ -425,29 +458,29 @@ Deno.serve(async (req) => {
     )
 
     // ── 6. Score every client and process qualifying ones ─────────────────────
-    let scoresComputed      = 0
-    let proposalsGenerated  = 0
-    let alertsCreated       = 0
+    let scoresComputed       = 0
+    let proposalsGenerated   = 0
+    let alertsCreated        = 0
     let approvalItemsCreated = 0
-    let skippedDuplicate    = 0
-    let skippedNoPath       = 0
+    let skippedDuplicate     = 0
+    let skippedNoPath        = 0
     const qualifyingClients: string[] = []
     const errors: string[]            = []
     const scoreLog: Array<{ name: string; score: number; tier: string | null; outcome: string }> = []
 
     for (const client of clients) {
       try {
-        const clientKey   = client.name.toLowerCase().trim()
-        const sprint      = sprintByClient.get(clientKey) ?? null
-        const recentLogs  = sprint ? (logsBySprint.get(sprint.id) ?? []) : []
-        const alertCount  = alertCountByClient.get(clientKey) ?? 0
+        const clientKey  = client.business_name.toLowerCase().trim()
+        const sprint     = sprintByClient.get(clientKey) ?? null
+        const recentLogs = sprint ? (logsBySprint.get(sprint.id) ?? []) : []
+        const alertCount = alertCountByClient.get(clientKey) ?? 0
 
         // Compute deterministic upsell readiness score
         const score = scoreClient(client, sprint, recentLogs, alertCount)
         scoresComputed++
 
         console.log(
-          `[sop-35] ${client.name} — score ${score.total}/10 (tier: ${client.tier ?? 'none'}) — ${score.rationale}`,
+          `[sop-35] ${client.business_name} — score ${score.total}/10 (tier: ${client.tier ?? 'none'}) — ${score.rationale}`,
         )
 
         // Persist score back to clients table
@@ -459,33 +492,32 @@ Deno.serve(async (req) => {
         const upsellPath = client.tier ? UPSELL_PATHS[client.tier] ?? null : null
 
         if (score.total < UPSELL_THRESHOLD) {
-          scoreLog.push({ name: client.name, score: score.total, tier: client.tier ?? null, outcome: 'below_threshold' })
+          scoreLog.push({ name: client.business_name, score: score.total, tier: client.tier ?? null, outcome: 'below_threshold' })
           continue
         }
 
         if (!upsellPath) {
-          // Already at top tier or unknown tier — no path forward
           skippedNoPath++
-          scoreLog.push({ name: client.name, score: score.total, tier: client.tier ?? null, outcome: 'no_upsell_path' })
-          console.log(`[sop-35] ${client.name} qualifies (${score.total}/10) but has no upsell path — skipping`)
+          scoreLog.push({ name: client.business_name, score: score.total, tier: client.tier ?? null, outcome: 'no_upsell_path' })
+          console.log(`[sop-35] ${client.business_name} qualifies (${score.total}/10) but has no upsell path — skipping`)
           continue
         }
 
         if (clientsWithOpenUpsell.has(clientKey)) {
           skippedDuplicate++
-          scoreLog.push({ name: client.name, score: score.total, tier: client.tier ?? null, outcome: 'alert_already_open' })
-          console.log(`[sop-35] ${client.name} qualifies (${score.total}/10) but already has open upsell alert — skipping`)
+          scoreLog.push({ name: client.business_name, score: score.total, tier: client.tier ?? null, outcome: 'alert_already_open' })
+          console.log(`[sop-35] ${client.business_name} qualifies (${score.total}/10) but already has open upsell alert — skipping`)
           continue
         }
 
-        qualifyingClients.push(client.name)
-        scoreLog.push({ name: client.name, score: score.total, tier: client.tier ?? null, outcome: 'generating_proposal' })
+        qualifyingClients.push(client.business_name)
+        scoreLog.push({ name: client.business_name, score: score.total, tier: client.tier ?? null, outcome: 'generating_proposal' })
 
         // ── 6a. Generate personalised offer document via Claude ───────────────
         const proposal = await generateUpsellProposal(client, sprint, upsellPath, score)
         proposalsGenerated++
 
-        const contactName  = client.contact_name ?? client.name
+        const contactName   = client.contact_name ?? client.business_name
         const talkingPoints = [proposal.tp1, proposal.tp2, proposal.tp3]
           .map((tp, i) => `${i + 1}. ${tp}`)
           .join(' ')
@@ -496,7 +528,7 @@ Deno.serve(async (req) => {
           sop_id:           SOP_ID,
           category:         'Upsell Opportunity',
           message: [
-            `${client.name} upsell-ready — score ${score.total}/10.`,
+            `${client.business_name} upsell-ready — score ${score.total}/10.`,
             `Recommended upgrade: ${upsellPath.current_label} → ${upsellPath.next_label}`,
             `(${upsellPath.monthly_fee}/mo, ${upsellPath.commitment}).`,
           ].join(' '),
@@ -504,16 +536,16 @@ Deno.serve(async (req) => {
             `Book upgrade conversation with ${contactName}.`,
             `Talking points: ${talkingPoints}`,
           ].join(' '),
-          client_name: client.name,
+          client_name: client.business_name,
           resolved:    false,
         })
 
         if (alertErr) {
-          console.error(`[sop-35] alert insert failed for ${client.name}: ${alertErr.message}`)
-          errors.push(`alert ${client.name}: ${alertErr.message}`)
+          console.error(`[sop-35] alert insert failed for ${client.business_name}: ${alertErr.message}`)
+          errors.push(`alert ${client.business_name}: ${alertErr.message}`)
         } else {
           alertsCreated++
-          console.log(`[sop-35] upsell alert created for ${client.name}`)
+          console.log(`[sop-35] upsell alert created for ${client.business_name}`)
         }
 
         // ── 6c. High-priority approval_queue with offer document ──────────────
@@ -527,9 +559,9 @@ Deno.serve(async (req) => {
             content_type: 'offer_document',
             content_id:   crypto.randomUUID(),
             content: {
-              title: `Upsell Proposal — ${client.name} — ${upsellPath.current_label} → ${upsellPath.next_label}`,
+              title: `Upsell Proposal — ${client.business_name} — ${upsellPath.current_label} → ${upsellPath.next_label}`,
               body: [
-                `Personalised upgrade proposal for ${client.name}.`,
+                `Personalised upgrade proposal for ${client.business_name}.`,
                 `Upsell readiness score: ${score.total}/10.`,
                 `Proposed upgrade: ${upsellPath.next_label} at ${upsellPath.monthly_fee}/mo (${upsellPath.commitment}).`,
                 `Review, personalise if needed, and send to ${contactName}.`,
@@ -537,7 +569,7 @@ Deno.serve(async (req) => {
               html_report: proposal.report_html,
               metadata: {
                 client_id:       client.id,
-                client_name:     client.name,
+                client_name:     client.business_name,
                 current_tier:    client.tier,
                 next_tier:       proposal.next_tier,
                 monthly_fee:     proposal.monthly_fee,
@@ -550,8 +582,8 @@ Deno.serve(async (req) => {
                   client_tenure:     score.client_tenure,
                   tier_headroom:     score.tier_headroom,
                 },
-                talking_points:  [proposal.tp1, proposal.tp2, proposal.tp3],
-                rationale:       score.rationale,
+                talking_points: [proposal.tp1, proposal.tp2, proposal.tp3],
+                rationale:      score.rationale,
               },
             },
           })
@@ -559,16 +591,16 @@ Deno.serve(async (req) => {
           .single()
 
         if (approvalErr) {
-          console.error(`[sop-35] approval_queue insert failed for ${client.name}: ${approvalErr.message}`)
-          errors.push(`approval ${client.name}: ${approvalErr.message}`)
+          console.error(`[sop-35] approval_queue insert failed for ${client.business_name}: ${approvalErr.message}`)
+          errors.push(`approval ${client.business_name}: ${approvalErr.message}`)
         } else {
           approvalItemsCreated++
-          console.log(`[sop-35] offer document queued for ${client.name}: ${approvalRow?.id}`)
+          console.log(`[sop-35] offer document queued for ${client.business_name}: ${approvalRow?.id}`)
         }
       } catch (clientErr) {
         const msg = clientErr instanceof Error ? clientErr.message : String(clientErr)
-        console.error(`[sop-35] error processing ${client.name}: ${msg}`)
-        errors.push(`${client.name}: ${msg}`)
+        console.error(`[sop-35] error processing ${client.business_name}: ${msg}`)
+        errors.push(`${client.business_name}: ${msg}`)
       }
     }
 

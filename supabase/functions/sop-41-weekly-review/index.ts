@@ -20,7 +20,7 @@ const TIER_MRR: Record<string, number> = {
 
 interface ClientRow {
   id:                  string
-  name:                string
+  business_name:       string
   status:              string
   tier:                string | null
   mrr:                 number | null
@@ -29,6 +29,21 @@ interface ClientRow {
   next_review_date:    string | null
 }
 
+// Raw proof_sprints columns
+interface RawSprintRow {
+  id:                string
+  client_name:       string
+  status:            string
+  sprint_number:     number | null
+  leads_generated:   number | null
+  actual_ad_spend:   number | null
+  client_ad_budget:  number | null
+  total_impressions: number | null
+  link_clicks:       number | null
+  start_date:        string
+}
+
+// Normalised shape for all sprint logic
 interface SprintRow {
   id:              string
   client_name:     string
@@ -42,7 +57,6 @@ interface SprintRow {
   cpl_target:      number
   roas:            number
   roas_target:     number
-  updated_at:      string | null
 }
 
 interface AlertRow {
@@ -60,6 +74,30 @@ interface ApprovalRow {
   priority:     string | null
   content_type: string | null
   reviewed_at:  string | null
+}
+
+// ─── Normalise ────────────────────────────────────────────────────────────────
+
+function normalise(raw: RawSprintRow): SprintRow {
+  const leadsGen = raw.leads_generated ?? 0
+  const spend    = raw.actual_ad_spend  ?? 0
+  const dayMs    = Date.now() - new Date(raw.start_date).getTime()
+  const dayNum   = raw.sprint_number ?? Math.max(Math.floor(dayMs / 86_400_000), 1)
+  const cpl      = leadsGen > 0 ? spend / leadsGen : 0
+  return {
+    id:              raw.id,
+    client_name:     raw.client_name,
+    status:          raw.status,
+    day_number:      dayNum,
+    leads_generated: leadsGen,
+    leads_target:    0,
+    spend,
+    spend_budget:    raw.client_ad_budget ?? 0,
+    cpl,
+    cpl_target:      0,
+    roas:            0,
+    roas_target:     0,
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -175,19 +213,19 @@ Deno.serve(async (req) => {
       // All active clients with tier + upsell info
       supabase
         .from('clients')
-        .select('id, name, status, tier, mrr, niche, last_upsell_score, next_review_date')
+        .select('id, business_name, status, tier, mrr, niche, last_upsell_score, next_review_date')
         .eq('status', 'active'),
 
-      // Active sprints with full metrics
+      // Active sprints with metrics
       supabase
-        .from('sprints')
-        .select('id, client_name, status, day_number, leads_generated, leads_target, spend, spend_budget, cpl, cpl_target, roas, roas_target, updated_at')
+        .from('proof_sprints')
+        .select('id, client_name, status, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
         .eq('status', 'active'),
 
       // Sprints that completed this week
       supabase
-        .from('sprints')
-        .select('id, client_name, leads_generated, leads_target, cpl, cpl_target, roas, roas_target, updated_at')
+        .from('proof_sprints')
+        .select('id, client_name, status, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
         .eq('status', 'complete')
         .gte('updated_at', weekStartISO),
 
@@ -199,7 +237,7 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(20),
 
-      // All alerts raised this week (for context on resolved vs open)
+      // All alerts raised this week
       supabase
         .from('ai_alerts')
         .select('severity, category, message, client_name, suggested_action, resolved, created_at')
@@ -234,15 +272,15 @@ Deno.serve(async (req) => {
 
     // ── 2. Process raw data ───────────────────────────────────────────────────
 
-    const clients         = (clientsRes.data ?? []) as ClientRow[]
-    const activeSprints   = (activeSprintsRes.data ?? []) as SprintRow[]
-    const completedSprints = (completedSprintsRes.data ?? []) as SprintRow[]
-    const openAlerts      = (openAlertsRes.data ?? []) as AlertRow[]
-    const weekAlerts      = (weekAlertsRes.data ?? []) as AlertRow[]
+    const clients          = (clientsRes.data ?? []) as ClientRow[]
+    const activeSprints    = ((activeSprintsRes.data ?? []) as RawSprintRow[]).map(normalise)
+    const completedSprints = ((completedSprintsRes.data ?? []) as RawSprintRow[]).map(normalise)
+    const openAlerts       = (openAlertsRes.data ?? []) as AlertRow[]
+    const weekAlerts       = (weekAlertsRes.data ?? []) as AlertRow[]
     const pendingApprovals = (pendingApprovalsRes.data ?? []) as ApprovalRow[]
-    const weekApprovals   = (weekApprovalsRes.data ?? []) as ApprovalRow[]
-    const allProspects    = (prospectStatusRes.data ?? []) as { status: string }[]
-    const newProspects    = newProspectsRes.count ?? 0
+    const weekApprovals    = (weekApprovalsRes.data ?? []) as ApprovalRow[]
+    const allProspects     = (prospectStatusRes.data ?? []) as { status: string }[]
+    const newProspects     = newProspectsRes.count ?? 0
 
     // Prospect status counts
     const statusCounts = allProspects.reduce<Record<string, number>>((acc, p) => {
@@ -256,7 +294,6 @@ Deno.serve(async (req) => {
 
     for (const c of clients) {
       const tier = c.tier ?? 'proof_sprint'
-      // Use stored mrr if present, otherwise look up tier rate
       const mrr  = c.mrr ?? TIER_MRR[tier] ?? 0
       totalMRR += mrr
       if (tier in tierMRR) tierMRR[tier] += mrr
@@ -279,28 +316,25 @@ Deno.serve(async (req) => {
       .filter(s => s.health === 'off_track')
       .map(s => s.client_name)
 
-    // Prospects closed this week: prospects with status=closed and created/updated this week
-    // We don't have updated_at on prospects — use 'closed' status count as proxy
     const closedThisWeek = 0 // prospects table doesn't expose closed_at; keep as 0
 
     // ── 3. Build context for Claude ───────────────────────────────────────────
 
     const sprintLines = sprintHealth.length > 0
       ? sprintHealth.map(s => {
-          const cplDelta = s.cpl_target > 0 ? ((s.cpl / s.cpl_target - 1) * 100).toFixed(1) : '0'
-          const leadPct  = s.leads_target > 0 ? ((s.leads_generated / s.leads_target) * 100).toFixed(1) : '0'
-          return `  ${s.client_name} — Day ${s.day_number}/14, ${s.leads_generated}/${s.leads_target} leads (${leadPct}%), ` +
-            `CPL £${s.cpl.toFixed(2)} vs £${s.cpl_target} target (${Number(cplDelta) >= 0 ? '+' : ''}${cplDelta}%), ` +
-            `ROAS ${s.roas.toFixed(2)}x vs ${s.roas_target}x, health: ${s.health}`
+          const cplDelta = s.cpl_target > 0 ? ((s.cpl / s.cpl_target - 1) * 100).toFixed(1) : 'N/A'
+          const leadPct  = s.leads_target > 0 ? ((s.leads_generated / s.leads_target) * 100).toFixed(1) : 'N/A'
+          return `  ${s.client_name} — Day ${s.day_number}/14, ${s.leads_generated} leads` +
+            (s.leads_target > 0 ? `/${s.leads_target} target (${leadPct}%)` : '') +
+            `, CPL £${s.cpl.toFixed(2)}` +
+            (s.cpl_target > 0 ? ` vs £${s.cpl_target} target (${Number(cplDelta) >= 0 ? '+' : ''}${cplDelta}%)` : '') +
+            `, health: ${s.health}`
         }).join('\n')
       : '  (none)'
 
     const completedLines = completedSprints.length > 0
       ? completedSprints.map(s => {
-          const cplDelta = s.cpl_target > 0 ? ((s.cpl / s.cpl_target - 1) * 100).toFixed(1) : '0'
-          return `  ${s.client_name} — ${s.leads_generated}/${s.leads_target} leads, ` +
-            `CPL £${s.cpl.toFixed(2)} (${Number(cplDelta) >= 0 ? '+' : ''}${cplDelta}% vs target), ` +
-            `ROAS ${s.roas.toFixed(2)}x vs ${s.roas_target}x`
+          return `  ${s.client_name} — ${s.leads_generated} leads, CPL £${s.cpl.toFixed(2)}`
         }).join('\n')
       : '  (none)'
 
@@ -311,11 +345,11 @@ Deno.serve(async (req) => {
       : '  (none)'
 
     const clientLines = clients.map(c => {
-      const tier  = c.tier ?? 'proof_sprint'
-      const mrr   = c.mrr ?? TIER_MRR[tier] ?? 0
+      const tier   = c.tier ?? 'proof_sprint'
+      const mrr    = c.mrr ?? TIER_MRR[tier] ?? 0
       const upsell = c.last_upsell_score != null ? `, upsell score: ${c.last_upsell_score}/10` : ''
-      const attn  = offTrackClients.includes(c.name) ? ' ⚠ OFF-TRACK SPRINT' : ''
-      return `  ${c.name} — ${tier.replace('_', ' ')}, MRR £${mrr}${upsell}${attn}`
+      const attn   = offTrackClients.includes(c.business_name) ? ' ⚠ OFF-TRACK SPRINT' : ''
+      return `  ${c.business_name} — ${tier.replace('_', ' ')}, MRR £${mrr}${upsell}${attn}`
     }).join('\n')
 
     const context = `Generated at: ${nowISO}
@@ -368,24 +402,24 @@ ${alertLines}
     // Ensure numeric fields are hard-set from ground-truth data, not hallucinated
     ;(briefing as Record<string, unknown>).pipeline_progress = {
       ...((briefing.pipeline_progress as Record<string, unknown>) ?? {}),
-      new_leads:       newProspects,
-      warm_replies:    statusCounts['warm'] ?? 0,
-      calls_booked:    statusCounts['call_booked'] ?? 0,
+      new_leads:        newProspects,
+      warm_replies:     statusCounts['warm'] ?? 0,
+      calls_booked:     statusCounts['call_booked'] ?? 0,
       closed_this_week: closedThisWeek,
     }
     ;(briefing as Record<string, unknown>).revenue_forecast = {
       ...((briefing.revenue_forecast as Record<string, unknown>) ?? {}),
-      current_mrr:     totalMRR,
-      active_clients:  clients.length,
-      tier_breakdown:  { ...tierMRR },
+      current_mrr:       totalMRR,
+      active_clients:    clients.length,
+      tier_breakdown:    { ...tierMRR },
       upsell_candidates: upsellCandidates,
     }
     ;(briefing as Record<string, unknown>).sprint_summary = {
-      active:               activeSprints.length,
-      on_track:             onTrack,
-      at_risk:              atRisk,
-      off_track:            offTrack,
-      completed_this_week:  completedSprints.length,
+      active:              activeSprints.length,
+      on_track:            onTrack,
+      at_risk:             atRisk,
+      off_track:           offTrack,
+      completed_this_week: completedSprints.length,
     }
 
     // ── 5. Persist to daily_briefings ─────────────────────────────────────────

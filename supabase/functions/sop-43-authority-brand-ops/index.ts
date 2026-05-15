@@ -8,8 +8,6 @@ const SONNET    = 'claude-sonnet-4-6'
 const SOP_ID    = '43'
 const SOP_NAME  = 'SOP 43 — Authority Brand Monthly Ops'
 
-// Authority Brand: £3000/mo, Google Ads + Meta Ads + Remarketing. Top tier.
-// No upsell path — focus is retention, deepening results, and strategic expansion.
 const TIER_LABEL   = 'Authority Brand'
 const TIER_VALUE   = 'authority_brand'
 const MONTHLY_FEE  = '£3,000'
@@ -18,15 +16,29 @@ const CHANNELS     = 'Google Ads + Meta Ads + Remarketing'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ClientRow {
-  id:           string
-  name:         string
-  status:       string
-  tier:         string
-  niche:        string | null
-  contact_name: string | null
-  notes:        string | null
+  id:              string
+  business_name:   string
+  status:          string
+  tier:            string
+  niche:           string | null
+  contact_name:    string | null
+  notes:           string | null
 }
 
+// Raw proof_sprints columns
+interface RawSprintRow {
+  id:               string
+  client_name:      string
+  sprint_number:    number | null
+  leads_generated:  number | null
+  actual_ad_spend:  number | null
+  client_ad_budget: number | null
+  total_impressions: number | null
+  link_clicks:      number | null
+  start_date:       string
+}
+
+// Normalised shape
 interface SprintRow {
   id:               string
   client_name:      string
@@ -41,8 +53,7 @@ interface SprintRow {
   roas_target:      number
   impressions:      number
   clicks:           number
-  meta_campaign_id: string | null
-  start_date:       string | null
+  start_date:       string
 }
 
 interface SprintLogRow {
@@ -104,6 +115,33 @@ interface ClaudeOutput {
   report_html:          string
 }
 
+// ─── Normalise ────────────────────────────────────────────────────────────────
+
+function normalise(raw: RawSprintRow): SprintRow {
+  const leadsGen = raw.leads_generated   ?? 0
+  const spend    = raw.actual_ad_spend   ?? 0
+  const dayMs    = Date.now() - new Date(raw.start_date).getTime()
+  const dayNum   = raw.sprint_number ?? Math.max(Math.floor(dayMs / 86_400_000), 1)
+  const cpl      = leadsGen > 0 ? spend / leadsGen : 0
+
+  return {
+    id:            raw.id,
+    client_name:   raw.client_name,
+    day_number:    dayNum,
+    leads_generated: leadsGen,
+    leads_target:  0,
+    spend,
+    spend_budget:  raw.client_ad_budget   ?? 0,
+    cpl,
+    cpl_target:    0,
+    roas:          0,
+    roas_target:   0,
+    impressions:   raw.total_impressions  ?? 0,
+    clicks:        raw.link_clicks        ?? 0,
+    start_date:    raw.start_date,
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function monthStart(): { iso: string; date: string } {
@@ -159,7 +197,6 @@ function campaignHealthSummary(logs: SprintLogRow[]): string {
   return `${onPct}% on-track, ${riskPct}% at-risk, ${offPct}% off-track across ${total} daily checks`
 }
 
-// Computes full-funnel efficiency ratios from live sprint data + MTD log delta.
 function buildFunnelMetrics(sprint: SprintRow, logs: SprintLogRow[]): FunnelMetrics {
   let monthLeads = sprint.leads_generated
   let monthSpend = sprint.spend
@@ -189,7 +226,6 @@ function buildFunnelMetrics(sprint: SprintRow, logs: SprintLogRow[]): FunnelMetr
   }
 }
 
-// Aggregates ad set logs into ranked profiles for content performance analysis.
 function buildAdSetProfiles(adSetLogs: AdSetLogRow[]): AdSetProfile[] {
   const byName = new Map<string, AdSetLogRow[]>()
   for (const l of adSetLogs) {
@@ -221,7 +257,6 @@ function buildAdSetProfiles(adSetLogs: AdSetLogRow[]): AdSetProfile[] {
     })
   }
 
-  // Sort by avg CPL ascending (best performers first); zero-CPL profiles last
   return profiles.sort((a, b) => {
     if (a.avg_cpl === 0 && b.avg_cpl === 0) return 0
     if (a.avg_cpl === 0) return 1
@@ -233,19 +268,18 @@ function buildAdSetProfiles(adSetLogs: AdSetLogRow[]): AdSetProfile[] {
 // ─── Claude call + response parsing ──────────────────────────────────────────
 
 async function generateMonthlyReview(
-  client:     ClientRow,
-  sprint:     SprintRow | null,
-  monthLogs:  SprintLogRow[],
-  adSetLogs:  AdSetLogRow[],
+  client:      ClientRow,
+  sprint:      SprintRow | null,
+  monthLogs:   SprintLogRow[],
+  adSetLogs:   AdSetLogRow[],
   periodStart: string,
-  today:      string,
+  today:       string,
 ): Promise<ClaudeOutput> {
   const cplTrend      = computeTrend(monthLogs, 'cpl')
   const roasTrend     = computeTrend(monthLogs, 'roas')
   const healthSummary = campaignHealthSummary(monthLogs)
   const adSetProfiles = buildAdSetProfiles(adSetLogs)
 
-  // ── Build the data context string passed to Claude ────────────────────────
   let sprintContext: string
 
   if (sprint) {
@@ -270,10 +304,9 @@ async function generateMonthlyReview(
 
     sprintContext = `SPRINT METRICS (Month-to-Date):
   Sprint day: ${sprint.day_number}/14
-  Leads MTD: ${funnel.leads} / ${sprint.leads_target} target (${funnel.leads_to_target_pct}% of target)
-  Spend MTD: £${funnel.month_spend} / £${sprint.spend_budget} budget (${funnel.budget_utilisation}% utilised)
-  CPL: £${sprint.cpl.toFixed(2)} vs £${sprint.cpl_target} target
-  ROAS: ${sprint.roas.toFixed(2)}x vs ${sprint.roas_target}x target
+  Leads MTD: ${funnel.leads}
+  Spend MTD: £${funnel.month_spend}${sprint.spend_budget > 0 ? ` / £${sprint.spend_budget} budget (${funnel.budget_utilisation}% utilised)` : ''}
+  CPL: £${sprint.cpl.toFixed(2)}
 
 FULL FUNNEL (cumulative sprint totals):
   Impressions (top-of-funnel reach): ${funnel.impressions.toLocaleString()}
@@ -281,11 +314,9 @@ FULL FUNNEL (cumulative sprint totals):
   Leads: ${sprint.leads_generated} | Click-to-lead rate: ${funnel.click_to_lead_pct}%
   Cost-per-click: £${funnel.cost_per_click}
   Cost-per-lead (CPL): £${sprint.cpl.toFixed(2)}
-  Revenue efficiency (ROAS): ${sprint.roas.toFixed(2)}x
 
 TRENDS (month-to-date direction):
   CPL:  ${cplTrend.label}
-  ROAS: ${roasTrend.label}
   Campaign health: ${healthSummary}
 
 CONTENT PERFORMANCE — Top ad sets by CPL (best → worst):
@@ -297,7 +328,7 @@ ${bottomAdSets}`
     sprintContext = 'No active sprint found this month.'
   }
 
-  const prompt = `Client: ${client.name}
+  const prompt = `Client: ${client.business_name}
 Tier: ${TIER_LABEL} (${MONTHLY_FEE}/mo | ${CHANNELS})
 Niche: ${client.niche ?? 'Local service business'}
 Period: ${periodStart} to ${today}
@@ -320,52 +351,18 @@ ${sprintContext}`
       '<!DOCTYPE html>',
       '<html>... (full HTML report below)',
       '',
-      'Rating guide for overall_rating:',
-      '  9-10: Exceptional — CPL & ROAS both beating targets, leads ahead of pace',
-      '  7-8:  Strong — on or near targets across all metrics',
-      '  5-6:  Adequate — mixed results, some metrics underperforming',
-      '  3-4:  Concerning — multiple metrics off target, intervention needed',
-      '  1-2:  Critical — significant underperformance, client retention at risk',
-      '',
-      'retention_risk: "high" if overall_rating ≤ 4 OR CPL >30% over target OR ROAS <50% of target.',
-      '',
       'HTML report sections (in order, all required):',
       '  1. Executive Summary',
-      '     — Overall verdict in 3-4 sentences. Rating badge (from REPORT_JSON). Key metric headline.',
-      '     — Is the client getting clear ROI from their £3,000/mo investment?',
       '  2. Full Funnel Performance',
-      '     — Present the complete impression → click → lead funnel as a visual flow table.',
-      '     — Highlight where drop-off is occurring and what it means for overall efficiency.',
-      '     — Include CTR, click-to-lead rate, CPL, ROAS in a metrics table.',
       '  3. Brand Authority Metrics',
-      '     — Reach (impressions MTD), engagement (CTR vs niche benchmarks), brand frequency estimate.',
-      '     — ROAS trend commentary: is spend becoming more or less efficient over the month?',
-      '     — Remarketing signal: are retargeted audiences performing differently? (note if data unavailable)',
       '  4. Content Performance',
-      '     — Full ranked ad set table: name, spend, impressions, CTR, CPL, vs target.',
-      '     — Identify best performers (scale candidates) and underperformers (pause candidates).',
-      '     — Creative angle observations: what themes or ad types are winning?',
       '  5. Market Positioning Analysis',
-      '     — Given the client\'s niche and performance data, assess their competitive position.',
-      '     — Are CPL/ROAS levels indicative of a competitive or clear-field market?',
-      '     — What does the impression volume suggest about market saturation or opportunity?',
-      '     — Identify one market opportunity or risk based on the data.',
       '  6. Strategic Recommendations — Next 30 Days',
-      '     — Exactly 4 recommendations, each with: Priority level, Action, Expected impact, Owner.',
-      '     — Recommendations must be specific and data-driven (reference actual metrics).',
-      '     — Cover at least: one budget/scale action, one creative/content action, one strategic action.',
       '',
       'HTML style rules (inline styles only — no <style> blocks):',
       '  - max-width 760px, margin 0 auto, font-family Arial/sans-serif, color #111827, background #fff',
       '  - Header: background #0f172a, white text, padding 28px 36px',
-      '    — Two-line: client name (24px bold) + tier badge pill + date range (13px, #94a3b8)',
-      '  - Rating badge in Executive Summary: large circle (64px), colour-coded:',
-      '    9-10 → #15803d (deep green), 7-8 → #16a34a (green), 5-6 → #d97706 (amber), 1-4 → #dc2626 (red)',
       '  - Section <h2>: color #0f172a, border-left 4px solid #3b82f6, padding-left 12px, margin-top 32px',
-      '  - Funnel flow table: horizontal arrow-connected cells, colour gradient top→bottom',
-      '  - Ad set table: full width, alternating rows, CPL vs target shown as +/- coloured delta badge',
-      '  - Recommendation cards: light border-left (4px solid priority colour: red/amber/blue/green)',
-      '  - Retention risk pill: red (#fef2f2 / #dc2626) if high, amber if medium, green if low',
       '  - Footer: #f8fafc background, 12px text, "Generated by AA Operator · Attract Acquisition"',
     ].join('\n'), cache_control: { type: 'ephemeral' } }],
     messages: [{ role: 'user', content: prompt }],
@@ -377,7 +374,6 @@ ${sprintContext}`
     .join('')
     .trim()
 
-  // Extract REPORT_JSON (single line, same pattern as sop-31 SCORE_JSON)
   const jsonLine = raw.match(/^REPORT_JSON:\s*(\{[^\n]+\})/m)
   let overallRating      = 5
   let retentionRisk      = 'medium'
@@ -433,7 +429,7 @@ Deno.serve(async (req) => {
     // ── 1. Fetch active authority_brand clients ───────────────────────────────
     const { data: rawClients, error: clientsErr } = await supabase
       .from('clients')
-      .select('id, name, status, tier, niche, contact_name, notes')
+      .select('id, business_name, status, tier, niche, contact_name, notes')
       .eq('status', 'active')
       .eq('tier', TIER_VALUE)
 
@@ -458,21 +454,15 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ── 2. Bulk-fetch all active sprints indexed by client_name ───────────────
+    // ── 2. Bulk-fetch all active sprints ──────────────────────────────────────
     const { data: rawSprints, error: sprintsErr } = await supabase
-      .from('sprints')
-      .select([
-        'id', 'client_name', 'day_number',
-        'leads_generated', 'leads_target',
-        'spend', 'spend_budget', 'cpl', 'cpl_target',
-        'roas', 'roas_target', 'impressions', 'clicks',
-        'meta_campaign_id', 'start_date',
-      ].join(', '))
+      .from('proof_sprints')
+      .select('id, client_name, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
       .eq('status', 'active')
 
-    if (sprintsErr) throw new Error(`fetch sprints: ${sprintsErr.message}`)
+    if (sprintsErr) throw new Error(`fetch proof_sprints: ${sprintsErr.message}`)
 
-    const sprints        = (rawSprints ?? []) as SprintRow[]
+    const sprints        = ((rawSprints ?? []) as RawSprintRow[]).map(normalise)
     const sprintByClient = new Map<string, SprintRow>(
       sprints.map(s => [s.client_name.toLowerCase().trim(), s]),
     )
@@ -480,18 +470,18 @@ Deno.serve(async (req) => {
 
     console.log(`[sop-43] ${sprints.length} active sprints`)
 
-    // ── 3. Bulk-fetch month-to-date sprint logs (ascending for trend math) ────
+    // ── 3. Bulk-fetch month-to-date sprint logs ───────────────────────────────
     const logsBySprint = new Map<string, SprintLogRow[]>()
 
     if (sprintIds.length > 0) {
       const { data: rawLogs, error: logsErr } = await supabase
-        .from('sprint_logs')
+        .from('sprint_daily_log')
         .select('sprint_id, logged_at, day_number, leads_generated, spend, cpl, roas, health_status')
         .in('sprint_id', sprintIds)
         .gte('logged_at', mStart)
         .order('logged_at', { ascending: true })
 
-      if (logsErr) throw new Error(`fetch sprint_logs: ${logsErr.message}`)
+      if (logsErr) throw new Error(`fetch sprint_daily_log: ${logsErr.message}`)
 
       for (const log of (rawLogs ?? []) as SprintLogRow[]) {
         const arr = logsBySprint.get(log.sprint_id) ?? []
@@ -531,26 +521,24 @@ Deno.serve(async (req) => {
 
     for (const client of clients) {
       try {
-        console.log(`[sop-43] generating review for ${client.name}...`)
+        console.log(`[sop-43] generating review for ${client.business_name}...`)
 
-        const sprint    = sprintByClient.get(client.name.toLowerCase().trim()) ?? null
+        const sprint    = sprintByClient.get(client.business_name.toLowerCase().trim()) ?? null
         const monthLogs = sprint ? (logsBySprint.get(sprint.id)   ?? []) : []
         const adSetLogs = sprint ? (adLogsBySprint.get(sprint.id) ?? []) : []
 
-        // ── 5a. Generate comprehensive review via Claude Sonnet ───────────────
         const output = await generateMonthlyReview(
           client, sprint, monthLogs, adSetLogs, mStartDate, today,
         )
         reportsGenerated++
 
         console.log(
-          `[sop-43] ${client.name} — rating ${output.overall_rating}/10, ` +
+          `[sop-43] ${client.business_name} — rating ${output.overall_rating}/10, ` +
           `retention risk: ${output.retention_risk}, health: ${output.campaign_health}`,
         )
 
-        if (output.retention_risk === 'high') highRiskClients.push(client.name)
+        if (output.retention_risk === 'high') highRiskClients.push(client.business_name)
 
-        // ── 5b. Write high-priority approval_queue item ───────────────────────
         const periodLabel = `${mStartDate} – ${today}`
 
         const { data: approvalRow, error: approvalErr } = await supabase
@@ -563,9 +551,9 @@ Deno.serve(async (req) => {
             content_type: 'client_report',
             content_id:   crypto.randomUUID(),
             content: {
-              title: `Authority Brand Monthly Review — ${client.name} — ${periodLabel}`,
+              title: `Authority Brand Monthly Review — ${client.business_name} — ${periodLabel}`,
               body: [
-                `Comprehensive monthly delivery review for ${client.name} (${TIER_LABEL}, ${MONTHLY_FEE}/mo).`,
+                `Comprehensive monthly delivery review for ${client.business_name} (${TIER_LABEL}, ${MONTHLY_FEE}/mo).`,
                 `Overall rating: ${output.overall_rating}/10.`,
                 `Retention risk: ${output.retention_risk}.`,
                 `Campaign health: ${output.campaign_health}.`,
@@ -574,7 +562,7 @@ Deno.serve(async (req) => {
               html_report: output.report_html,
               metadata: {
                 client_id:            client.id,
-                client_name:          client.name,
+                client_name:          client.business_name,
                 tier:                 TIER_VALUE,
                 sprint_id:            sprint?.id ?? null,
                 sprint_day:           sprint?.day_number ?? null,
@@ -584,9 +572,6 @@ Deno.serve(async (req) => {
                 next_30_day_priority: output.next_30_day_priority,
                 campaign_health:      output.campaign_health,
                 cpl:                  sprint?.cpl ?? null,
-                cpl_target:           sprint?.cpl_target ?? null,
-                roas:                 sprint?.roas ?? null,
-                roas_target:          sprint?.roas_target ?? null,
                 impressions:          sprint?.impressions ?? null,
                 clicks:               sprint?.clicks ?? null,
               },
@@ -596,17 +581,17 @@ Deno.serve(async (req) => {
           .single()
 
         if (approvalErr) {
-          console.error(`[sop-43] approval_queue insert failed for ${client.name}: ${approvalErr.message}`)
-          errors.push(`approval ${client.name}: ${approvalErr.message}`)
+          console.error(`[sop-43] approval_queue insert failed for ${client.business_name}: ${approvalErr.message}`)
+          errors.push(`approval ${client.business_name}: ${approvalErr.message}`)
         } else {
           approvalItemsCreated++
           approvalIds.push(approvalRow?.id ?? '')
-          console.log(`[sop-43] approval item created for ${client.name}: ${approvalRow?.id}`)
+          console.log(`[sop-43] approval item created for ${client.business_name}: ${approvalRow?.id}`)
         }
       } catch (clientErr) {
         const msg = clientErr instanceof Error ? clientErr.message : String(clientErr)
-        console.error(`[sop-43] error processing ${client.name}: ${msg}`)
-        errors.push(`${client.name}: ${msg}`)
+        console.error(`[sop-43] error processing ${client.business_name}: ${msg}`)
+        errors.push(`${client.business_name}: ${msg}`)
       }
     }
 

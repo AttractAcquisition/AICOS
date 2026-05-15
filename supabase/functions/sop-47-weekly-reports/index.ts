@@ -11,28 +11,42 @@ const SOP_NAME  = 'SOP 47 — Weekly Client Reports'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ClientRow {
-  id:     string
-  name:   string
-  status: string
+  id:            string
+  business_name: string
+  status:        string
 }
 
+// Raw proof_sprints columns
+interface RawSprintRow {
+  id:                string
+  client_name:       string
+  status:            string
+  sprint_number:     number | null
+  leads_generated:   number | null
+  actual_ad_spend:   number | null
+  client_ad_budget:  number | null
+  total_impressions: number | null
+  link_clicks:       number | null
+  start_date:        string
+}
+
+// Normalised shape used for report generation
 interface SprintRow {
-  id:               string
-  client_name:      string
-  status:           string
-  day_number:       number
-  leads_generated:  number
-  leads_target:     number
-  spend:            number
-  spend_budget:     number
-  cpl:              number
-  cpl_target:       number
-  roas:             number
-  roas_target:      number
-  impressions:      number
-  clicks:           number
-  meta_campaign_id: string | null
-  start_date:       string | null
+  id:              string
+  client_name:     string
+  status:          string
+  day_number:      number
+  leads_generated: number
+  leads_target:    number
+  spend:           number
+  spend_budget:    number
+  cpl:             number
+  cpl_target:      number
+  roas:            number
+  roas_target:     number
+  impressions:     number
+  clicks:          number
+  start_date:      string
 }
 
 interface SprintLogRow {
@@ -66,6 +80,33 @@ interface ClientReportData {
   weekSpend:  number
 }
 
+// ─── Normalise ────────────────────────────────────────────────────────────────
+
+function normalise(raw: RawSprintRow): SprintRow {
+  const leadsGen = raw.leads_generated ?? 0
+  const spend    = raw.actual_ad_spend  ?? 0
+  const dayMs    = Date.now() - new Date(raw.start_date).getTime()
+  const dayNum   = raw.sprint_number ?? Math.max(Math.floor(dayMs / 86_400_000), 1)
+  const cpl      = leadsGen > 0 ? spend / leadsGen : 0
+  return {
+    id:              raw.id,
+    client_name:     raw.client_name,
+    status:          raw.status,
+    day_number:      dayNum,
+    leads_generated: leadsGen,
+    leads_target:    0,
+    spend,
+    spend_budget:    raw.client_ad_budget ?? 0,
+    cpl,
+    cpl_target:      0,
+    roas:            0,
+    roas_target:     0,
+    impressions:     raw.total_impressions ?? 0,
+    clicks:          raw.link_clicks ?? 0,
+    start_date:      raw.start_date,
+  }
+}
+
 // ─── Report generation ────────────────────────────────────────────────────────
 
 async function generateReport(data: ClientReportData): Promise<string> {
@@ -76,14 +117,13 @@ async function generateReport(data: ClientReportData): Promise<string> {
   let context: string
 
   if (sprint) {
-    const cplDelta     = sprint.cpl_target > 0 ? ((sprint.cpl / sprint.cpl_target - 1) * 100).toFixed(1) : '0'
-    const cplDirection = sprint.cpl <= sprint.cpl_target ? 'under' : 'over'
-    const roasDelta    = sprint.roas_target > 0 ? ((sprint.roas / sprint.roas_target - 1) * 100).toFixed(1) : '0'
-    const ctr          = sprint.impressions > 0 ? ((sprint.clicks / sprint.impressions) * 100).toFixed(2) : '0'
-    const budgetUsedPct = sprint.spend_budget > 0 ? ((sprint.spend / sprint.spend_budget) * 100).toFixed(1) : '0'
-    const paceVsTarget = sprint.leads_target > 0
+    const cplDelta      = sprint.cpl_target > 0 ? ((sprint.cpl / sprint.cpl_target - 1) * 100).toFixed(1) : null
+    const cplDirection  = sprint.cpl_target > 0 && sprint.cpl <= sprint.cpl_target ? 'under' : 'over'
+    const ctr           = sprint.impressions > 0 ? ((sprint.clicks / sprint.impressions) * 100).toFixed(2) : '0'
+    const budgetUsedPct = sprint.spend_budget > 0 ? ((sprint.spend / sprint.spend_budget) * 100).toFixed(1) : 'N/A'
+    const paceVsTarget  = sprint.leads_target > 0
       ? ((sprint.leads_generated / sprint.leads_target) * 100).toFixed(1)
-      : '0'
+      : 'N/A'
 
     const dailyTrend = recentLogs.length > 0
       ? recentLogs
@@ -102,17 +142,24 @@ async function generateReport(data: ClientReportData): Promise<string> {
         ).join('\n')
       : '  No ad set breakdown available (no Meta campaign linked or no sync data)'
 
-    context = `Client: ${client.name}
+    const budgetLine = sprint.spend_budget > 0
+      ? `Total spend: £${sprint.spend.toFixed(2)} / £${sprint.spend_budget} budget (${budgetUsedPct}% used)`
+      : `Total spend: £${sprint.spend.toFixed(2)}`
+
+    const cplLine = cplDelta !== null
+      ? `CPL: £${sprint.cpl.toFixed(2)} (${Math.abs(parseFloat(cplDelta))}% ${cplDirection} target)`
+      : `CPL: £${sprint.cpl.toFixed(2)}`
+
+    context = `Client: ${client.business_name}
 Report period: ${weekAgo} to ${today}
 
 SPRINT PERFORMANCE:
   Sprint day: ${sprint.day_number} of 14
-  Leads generated (sprint total): ${sprint.leads_generated} / ${sprint.leads_target} target (${paceVsTarget}% of target)
+  Leads generated (sprint total): ${sprint.leads_generated}${sprint.leads_target > 0 ? ` / ${sprint.leads_target} target (${paceVsTarget}% of target)` : ''}
   Leads this week: ${weekLeads}
   Spend this week: £${weekSpend.toFixed(2)}
-  Total spend: £${sprint.spend.toFixed(2)} / £${sprint.spend_budget} budget (${budgetUsedPct}% used)
-  CPL: £${sprint.cpl.toFixed(2)} vs £${sprint.cpl_target} target (${Math.abs(parseFloat(cplDelta))}% ${cplDirection} target)
-  ROAS: ${sprint.roas.toFixed(2)}x vs ${sprint.roas_target}x target (${roasDelta}% vs target)
+  ${budgetLine}
+  ${cplLine}
   Impressions: ${sprint.impressions.toLocaleString()}
   Clicks: ${sprint.clicks.toLocaleString()}
   CTR: ${ctr}%
@@ -123,7 +170,7 @@ ${dailyTrend}
 AD SET PERFORMANCE (last 7 days):
 ${adSetSection}`
   } else {
-    context = `Client: ${client.name}
+    context = `Client: ${client.business_name}
 Report period: ${weekAgo} to ${today}
 
 No active sprint found for this client this week. This may be a client between sprints or awaiting campaign setup.`
@@ -139,8 +186,8 @@ No active sprint found for this client this week. This may be a client between s
       'Generate a clean, professional HTML report with these exact sections in order:',
       '  1. Executive Summary — 2-3 sentences on overall performance vs targets, including a clear verdict',
       '  2. Leads Generated — week total, sprint total, pace vs target, trend commentary',
-      '  3. CPL vs Target — current CPL, target CPL, delta percentage, trend interpretation',
-      '  4. ROAS — current ROAS vs target, revenue efficiency commentary',
+      '  3. CPL vs Target — current CPL, target CPL (if available), delta percentage, trend interpretation',
+      '  4. ROAS — current ROAS vs target (if available), revenue efficiency commentary',
       '  5. Ad Performance Highlights — top/bottom performing ad sets this week, CTR, key observations',
       '  6. Next Week Focus — 2-3 specific, data-driven, actionable recommendations',
       '',
@@ -200,7 +247,7 @@ Deno.serve(async (req) => {
     // ── 1. Fetch active clients (all, or single if client_id supplied) ────────
     let clientsQuery = supabase
       .from('clients')
-      .select('id, name, status')
+      .select('id, business_name, status')
       .eq('status', 'active')
 
     if (targetClientId) {
@@ -232,19 +279,13 @@ Deno.serve(async (req) => {
 
     // ── 2. Bulk-fetch all active sprints ──────────────────────────────────────
     const { data: rawSprints, error: sprintsErr } = await supabase
-      .from('sprints')
-      .select([
-        'id', 'client_name', 'status', 'day_number',
-        'leads_generated', 'leads_target',
-        'spend', 'spend_budget', 'cpl', 'cpl_target',
-        'roas', 'roas_target', 'impressions', 'clicks',
-        'meta_campaign_id', 'start_date',
-      ].join(', '))
+      .from('proof_sprints')
+      .select('id, client_name, status, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
       .eq('status', 'active')
 
-    if (sprintsErr) throw new Error(`fetch sprints: ${sprintsErr.message}`)
+    if (sprintsErr) throw new Error(`fetch proof_sprints: ${sprintsErr.message}`)
 
-    const sprints        = (rawSprints ?? []) as SprintRow[]
+    const sprints        = ((rawSprints ?? []) as RawSprintRow[]).map(normalise)
     const sprintByClient = new Map<string, SprintRow>(
       sprints.map(s => [s.client_name.toLowerCase().trim(), s]),
     )
@@ -252,18 +293,18 @@ Deno.serve(async (req) => {
 
     console.log(`[sop-47] ${sprints.length} active sprints found`)
 
-    // ── 3. Bulk-fetch 7-day sprint logs ───────────────────────────────────────
+    // ── 3. Bulk-fetch 7-day sprint daily logs ─────────────────────────────────
     const logsBySprint = new Map<string, SprintLogRow[]>()
 
     if (sprintIds.length > 0) {
       const { data: rawLogs, error: logsErr } = await supabase
-        .from('sprint_logs')
+        .from('sprint_daily_log')
         .select('sprint_id, logged_at, day_number, leads_generated, spend, cpl, roas, health_status')
         .in('sprint_id', sprintIds)
         .gte('logged_at', sevenDaysAgo)
         .order('logged_at', { ascending: false })
 
-      if (logsErr) throw new Error(`fetch sprint_logs: ${logsErr.message}`)
+      if (logsErr) throw new Error(`fetch sprint_daily_log: ${logsErr.message}`)
 
       for (const log of (rawLogs ?? []) as SprintLogRow[]) {
         const arr = logsBySprint.get(log.sprint_id) ?? []
@@ -303,13 +344,13 @@ Deno.serve(async (req) => {
 
     for (const client of clients) {
       try {
-        console.log(`[sop-47] generating report for ${client.name}...`)
+        console.log(`[sop-47] generating report for ${client.business_name}...`)
 
-        const sprint     = sprintByClient.get(client.name.toLowerCase().trim()) ?? null
+        const sprint     = sprintByClient.get(client.business_name.toLowerCase().trim()) ?? null
         const recentLogs = sprint ? (logsBySprint.get(sprint.id) ?? []) : []
         const adSetLogs  = sprint ? (adLogsBySprint.get(sprint.id) ?? []) : []
 
-        // Compute week-level lead and spend deltas from cumulative sprint_log snapshots
+        // Compute week-level lead and spend deltas from cumulative sprint_daily_log snapshots
         let weekLeads = 0
         let weekSpend = 0
 
@@ -334,7 +375,7 @@ Deno.serve(async (req) => {
         })
         reportsGenerated++
 
-        console.log(`[sop-47] report generated for ${client.name} (${html.length} chars)`)
+        console.log(`[sop-47] report generated for ${client.business_name} (${html.length} chars)`)
 
         // ── 5b. Write to approval_queue ───────────────────────────────────────
         const weekLabel = `${sevenDaysAgoDate} – ${new Date().toISOString().slice(0, 10)}`
@@ -349,12 +390,12 @@ Deno.serve(async (req) => {
             content_type: 'client_report',
             content_id:   crypto.randomUUID(),
             content: {
-              title:       `Weekly Report — ${client.name} — ${weekLabel}`,
-              body:        `AI-generated weekly performance report for ${client.name}. Review before sending to client.`,
+              title:       `Weekly Report — ${client.business_name} — ${weekLabel}`,
+              body:        `AI-generated weekly performance report for ${client.business_name}. Review before sending to client.`,
               html_report: html,
               metadata: {
                 client_id:    client.id,
-                client_name:  client.name,
+                client_name:  client.business_name,
                 sprint_id:    sprint?.id ?? null,
                 sprint_day:   sprint?.day_number ?? null,
                 week_label:   weekLabel,
@@ -363,9 +404,6 @@ Deno.serve(async (req) => {
                 total_leads:  sprint?.leads_generated ?? null,
                 leads_target: sprint?.leads_target ?? null,
                 cpl:          sprint?.cpl ?? null,
-                cpl_target:   sprint?.cpl_target ?? null,
-                roas:         sprint?.roas ?? null,
-                roas_target:  sprint?.roas_target ?? null,
               },
             },
           })
@@ -373,17 +411,17 @@ Deno.serve(async (req) => {
           .single()
 
         if (approvalErr) {
-          console.error(`[sop-47] approval_queue insert failed for ${client.name}: ${approvalErr.message}`)
-          errors.push(`approval ${client.name}: ${approvalErr.message}`)
+          console.error(`[sop-47] approval_queue insert failed for ${client.business_name}: ${approvalErr.message}`)
+          errors.push(`approval ${client.business_name}: ${approvalErr.message}`)
         } else {
           approvalItemsCreated++
           approvalIds.push(approvalRow?.id ?? '')
-          console.log(`[sop-47] approval item created for ${client.name}: ${approvalRow?.id}`)
+          console.log(`[sop-47] approval item created for ${client.business_name}: ${approvalRow?.id}`)
         }
       } catch (clientErr) {
         const msg = clientErr instanceof Error ? clientErr.message : String(clientErr)
-        console.error(`[sop-47] error processing ${client.name}: ${msg}`)
-        errors.push(`${client.name}: ${msg}`)
+        console.error(`[sop-47] error processing ${client.business_name}: ${msg}`)
+        errors.push(`${client.business_name}: ${msg}`)
       }
     }
 

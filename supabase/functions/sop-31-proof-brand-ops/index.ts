@@ -8,8 +8,6 @@ const SONNET    = 'claude-sonnet-4-6'
 const SOP_ID    = '31'
 const SOP_NAME  = 'SOP 31 — Proof Brand Monthly Ops'
 
-// Proof Brand tier: £1500/mo, Google Ads + Meta Ads, 14-day proof sprint cadence.
-// Upsell target: Authority Brand (£3000/mo, adds Remarketing).
 const TIER_LABEL       = 'Proof Brand'
 const UPSELL_TIER      = 'Authority Brand'
 const UPSELL_THRESHOLD = 8
@@ -17,14 +15,28 @@ const UPSELL_THRESHOLD = 8
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ClientRow {
-  id:           string
-  name:         string
-  status:       string
-  tier:         string
-  niche:        string | null
-  contact_name: string | null
+  id:              string
+  business_name:   string
+  status:          string
+  tier:            string
+  niche:           string | null
+  contact_name:    string | null
 }
 
+// Raw proof_sprints columns
+interface RawSprintRow {
+  id:               string
+  client_name:      string
+  sprint_number:    number | null
+  leads_generated:  number | null
+  actual_ad_spend:  number | null
+  client_ad_budget: number | null
+  total_impressions: number | null
+  link_clicks:      number | null
+  start_date:       string
+}
+
+// Normalised shape used throughout
 interface SprintRow {
   id:               string
   client_name:      string
@@ -39,8 +51,7 @@ interface SprintRow {
   roas_target:      number
   impressions:      number
   clicks:           number
-  meta_campaign_id: string | null
-  start_date:       string | null
+  start_date:       string
 }
 
 interface SprintLogRow {
@@ -78,6 +89,33 @@ interface ClaudeOutput {
   report_html:      string
 }
 
+// ─── Normalise ────────────────────────────────────────────────────────────────
+
+function normalise(raw: RawSprintRow): SprintRow {
+  const leadsGen = raw.leads_generated   ?? 0
+  const spend    = raw.actual_ad_spend   ?? 0
+  const dayMs    = Date.now() - new Date(raw.start_date).getTime()
+  const dayNum   = raw.sprint_number ?? Math.max(Math.floor(dayMs / 86_400_000), 1)
+  const cpl      = leadsGen > 0 ? spend / leadsGen : 0
+
+  return {
+    id:            raw.id,
+    client_name:   raw.client_name,
+    day_number:    dayNum,
+    leads_generated: leadsGen,
+    leads_target:  0,
+    spend,
+    spend_budget:  raw.client_ad_budget   ?? 0,
+    cpl,
+    cpl_target:    0,
+    roas:          0,
+    roas_target:   0,
+    impressions:   raw.total_impressions  ?? 0,
+    clicks:        raw.link_clicks        ?? 0,
+    start_date:    raw.start_date,
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function monthStart(): { iso: string; date: string } {
@@ -88,9 +126,6 @@ function monthStart(): { iso: string; date: string } {
   return { iso, date: iso.slice(0, 10) }
 }
 
-// Splits sorted logs into first/second half and returns direction of change.
-// CPL: lower is better, so a negative delta is "improving".
-// ROAS: higher is better, so a positive delta is "improving".
 function computeTrend(
   logs: SprintLogRow[],
   field: 'cpl' | 'roas',
@@ -151,7 +186,6 @@ async function generateDeliveryCheck(
   const roasTrend = computeTrend(monthLogs, 'roas')
   const healthSummary = campaignHealthSummary(monthLogs)
 
-  // Month-to-date lead delta: newest snapshot minus start-of-month snapshot
   let monthLeads = 0
   let monthSpend = 0
   if (sprint && monthLogs.length > 0) {
@@ -165,7 +199,6 @@ async function generateDeliveryCheck(
     monthSpend = sprint.spend
   }
 
-  // Best and worst ad sets by CPL this month
   const adSetSummary = adSetLogs.length > 0
     ? (() => {
         const byAdSet = new Map<string, number[]>()
@@ -191,10 +224,9 @@ async function generateDeliveryCheck(
 
   const sprintContext = sprint
     ? `Sprint day: ${sprint.day_number}/14
-Leads MTD: ${monthLeads} / ${sprint.leads_target} target (${sprint.leads_target > 0 ? ((monthLeads / sprint.leads_target) * 100).toFixed(0) : '0'}% of target)
-Total spend MTD: £${monthSpend.toFixed(2)} / £${sprint.spend_budget} budget
-Current CPL: £${sprint.cpl.toFixed(2)} vs £${sprint.cpl_target} target
-Current ROAS: ${sprint.roas.toFixed(2)}x vs ${sprint.roas_target}x target
+Leads MTD: ${monthLeads}
+Total spend MTD: £${monthSpend.toFixed(2)}${sprint.spend_budget > 0 ? ` / £${sprint.spend_budget} budget` : ''}
+CPL: £${sprint.cpl.toFixed(2)}
 Impressions: ${sprint.impressions.toLocaleString()} | Clicks: ${sprint.clicks.toLocaleString()} | CTR: ${sprint.impressions > 0 ? ((sprint.clicks / sprint.impressions) * 100).toFixed(2) : '0'}%
 CPL trend (MTD): ${cplTrend.label}
 ROAS trend (MTD): ${roasTrend.label}
@@ -202,14 +234,14 @@ Campaign health: ${healthSummary}
 Ad set performance: ${adSetSummary}`
     : 'No active sprint found this month.'
 
-  const prompt = `Client: ${client.name}
+  const prompt = `Client: ${client.business_name}
 Tier: ${TIER_LABEL} (£1500/mo | Google Ads + Meta Ads)
 Niche: ${client.niche ?? 'Local service business'}
 Period: ${monthStart} to ${today}
 
 ${sprintContext}
 
-Upsell context: A score of ${UPSELL_THRESHOLD}+ means the client is a strong candidate to upgrade to ${UPSELL_TIER} (£3000/mo, adds Remarketing). Base your score on: CPL performance vs target, ROAS vs target, leads pace, trend direction, and overall campaign health.`
+Upsell context: A score of ${UPSELL_THRESHOLD}+ means the client is a strong candidate to upgrade to ${UPSELL_TIER} (£3000/mo, adds Remarketing). Base your score on: CPL performance, leads pace, trend direction, and overall campaign health.`
 
   const response = await anthropic.messages.create({
     model:      SONNET,
@@ -227,12 +259,11 @@ Upsell context: A score of ${UPSELL_THRESHOLD}+ means the client is a strong can
       '',
       'HTML report sections (in order):',
       '  1. Executive Summary — overall verdict in 2-3 sentences; is the client getting results?',
-      '  2. Leads This Month vs Target — MTD count, target, percentage to target, trend',
-      '  3. CPL Trend — current CPL, target, month-over-month direction, interpretation',
-      '  4. ROAS Trend — current ROAS, target, direction, revenue efficiency commentary',
-      '  5. Campaign Health — health status breakdown, top/bottom ad sets, key observations',
-      '  6. Recommended Optimisations — 3 specific, data-driven actions for next 14 days',
-      `  7. Upsell Readiness (score from SCORE_JSON) — what's working, what would ${UPSELL_TIER} add for this client`,
+      '  2. Leads This Month vs Target — MTD count, trend',
+      '  3. CPL Trend — current CPL, month-over-month direction, interpretation',
+      '  4. Campaign Health — health status breakdown, top/bottom ad sets, key observations',
+      '  5. Recommended Optimisations — 3 specific, data-driven actions for next 14 days',
+      `  6. Upsell Readiness (score from SCORE_JSON) — what's working, what would ${UPSELL_TIER} add for this client`,
       '',
       'HTML style rules (inline styles only):',
       '  - max-width 700px, margin auto, font-family Arial/sans-serif, color #1a1a1a, background #fff',
@@ -252,7 +283,6 @@ Upsell context: A score of ${UPSELL_THRESHOLD}+ means the client is a strong can
     .join('')
     .trim()
 
-  // Extract SCORE_JSON line
   const jsonLine  = raw.match(/^SCORE_JSON:\s*(\{[^\n]+\})/m)
   let upsellScore      = 5
   let upsellRationale  = 'Score could not be parsed from model response'
@@ -265,15 +295,14 @@ Upsell context: A score of ${UPSELL_THRESHOLD}+ means the client is a strong can
       upsellRationale = String(parsed.upsell_rationale ?? upsellRationale)
       campaignHealth  = String(parsed.campaign_health ?? campaignHealth)
     } catch {
-      console.warn(`[sop-31] SCORE_JSON parse failed for ${client.name} — using defaults`)
+      console.warn(`[sop-31] SCORE_JSON parse failed for ${client.business_name} — using defaults`)
     }
   } else {
-    console.warn(`[sop-31] No SCORE_JSON found in response for ${client.name}`)
+    console.warn(`[sop-31] No SCORE_JSON found in response for ${client.business_name}`)
   }
 
-  // Extract HTML (everything from <!DOCTYPE html> onward)
   const htmlMatch = raw.match(/<!DOCTYPE html>[\s\S]*/i)
-  const reportHtml = htmlMatch ? htmlMatch[0] : `<!DOCTYPE html><html><body><p>Report generation failed for ${client.name}.</p></body></html>`
+  const reportHtml = htmlMatch ? htmlMatch[0] : `<!DOCTYPE html><html><body><p>Report generation failed for ${client.business_name}.</p></body></html>`
 
   return {
     upsell_score:     upsellScore,
@@ -304,7 +333,7 @@ Deno.serve(async (req) => {
     // ── 1. Fetch active proof_brand clients ───────────────────────────────────
     const { data: rawClients, error: clientsErr } = await supabase
       .from('clients')
-      .select('id, name, status, tier, niche, contact_name')
+      .select('id, business_name, status, tier, niche, contact_name')
       .eq('status', 'active')
       .eq('tier', 'proof_brand')
 
@@ -331,19 +360,13 @@ Deno.serve(async (req) => {
 
     // ── 2. Bulk-fetch all active sprints indexed by client_name ───────────────
     const { data: rawSprints, error: sprintsErr } = await supabase
-      .from('sprints')
-      .select([
-        'id', 'client_name', 'day_number',
-        'leads_generated', 'leads_target',
-        'spend', 'spend_budget', 'cpl', 'cpl_target',
-        'roas', 'roas_target', 'impressions', 'clicks',
-        'meta_campaign_id', 'start_date',
-      ].join(', '))
+      .from('proof_sprints')
+      .select('id, client_name, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
       .eq('status', 'active')
 
-    if (sprintsErr) throw new Error(`fetch sprints: ${sprintsErr.message}`)
+    if (sprintsErr) throw new Error(`fetch proof_sprints: ${sprintsErr.message}`)
 
-    const sprints        = (rawSprints ?? []) as SprintRow[]
+    const sprints        = ((rawSprints ?? []) as RawSprintRow[]).map(normalise)
     const sprintByClient = new Map<string, SprintRow>(
       sprints.map(s => [s.client_name.toLowerCase().trim(), s]),
     )
@@ -356,13 +379,13 @@ Deno.serve(async (req) => {
 
     if (sprintIds.length > 0) {
       const { data: rawLogs, error: logsErr } = await supabase
-        .from('sprint_logs')
+        .from('sprint_daily_log')
         .select('sprint_id, logged_at, day_number, leads_generated, spend, cpl, roas, health_status')
         .in('sprint_id', sprintIds)
         .gte('logged_at', mStart)
         .order('logged_at', { ascending: true })
 
-      if (logsErr) throw new Error(`fetch sprint_logs: ${logsErr.message}`)
+      if (logsErr) throw new Error(`fetch sprint_daily_log: ${logsErr.message}`)
 
       for (const log of (rawLogs ?? []) as SprintLogRow[]) {
         const arr = logsBySprint.get(log.sprint_id) ?? []
@@ -383,7 +406,6 @@ Deno.serve(async (req) => {
         .order('date', { ascending: false })
 
       if (adLogsErr) {
-        // Non-fatal: ad set logs may not be synced yet
         console.warn(`[sop-31] ad_set_performance_logs fetch warning: ${adLogsErr.message}`)
       } else {
         for (const log of (rawAdLogs ?? []) as AdSetLogRow[]) {
@@ -404,23 +426,21 @@ Deno.serve(async (req) => {
 
     for (const client of clients) {
       try {
-        console.log(`[sop-31] processing ${client.name}...`)
+        console.log(`[sop-31] processing ${client.business_name}...`)
 
-        const sprint    = sprintByClient.get(client.name.toLowerCase().trim()) ?? null
+        const sprint    = sprintByClient.get(client.business_name.toLowerCase().trim()) ?? null
         const monthLogs = sprint ? (logsBySprint.get(sprint.id)    ?? []) : []
         const adSetLogs = sprint ? (adLogsBySprint.get(sprint.id)  ?? []) : []
 
-        // ── 5a. Generate delivery check via Claude Sonnet ─────────────────────
         const output = await generateDeliveryCheck(
           client, sprint, monthLogs, adSetLogs, mStartDate, today,
         )
         reportsGenerated++
 
         console.log(
-          `[sop-31] ${client.name} — score ${output.upsell_score}/10, health: ${output.campaign_health}`,
+          `[sop-31] ${client.business_name} — score ${output.upsell_score}/10, health: ${output.campaign_health}`,
         )
 
-        // ── 5b. Write to approval_queue ───────────────────────────────────────
         const periodLabel = `${mStartDate} – ${today}`
 
         const { data: approvalRow, error: approvalErr } = await supabase
@@ -433,12 +453,12 @@ Deno.serve(async (req) => {
             content_type: 'client_report',
             content_id:   crypto.randomUUID(),
             content: {
-              title:       `Proof Brand Monthly Check — ${client.name} — ${periodLabel}`,
-              body:        `Monthly delivery status check for ${client.name} (${TIER_LABEL}). Upsell score: ${output.upsell_score}/10. Campaign health: ${output.campaign_health}.`,
+              title:       `Proof Brand Monthly Check — ${client.business_name} — ${periodLabel}`,
+              body:        `Monthly delivery status check for ${client.business_name} (${TIER_LABEL}). Upsell score: ${output.upsell_score}/10. Campaign health: ${output.campaign_health}.`,
               html_report: output.report_html,
               metadata: {
                 client_id:        client.id,
-                client_name:      client.name,
+                client_name:      client.business_name,
                 tier:             'proof_brand',
                 sprint_id:        sprint?.id ?? null,
                 sprint_day:       sprint?.day_number ?? null,
@@ -447,9 +467,6 @@ Deno.serve(async (req) => {
                 upsell_rationale: output.upsell_rationale,
                 campaign_health:  output.campaign_health,
                 cpl:              sprint?.cpl ?? null,
-                cpl_target:       sprint?.cpl_target ?? null,
-                roas:             sprint?.roas ?? null,
-                roas_target:      sprint?.roas_target ?? null,
               },
             },
           })
@@ -457,40 +474,39 @@ Deno.serve(async (req) => {
           .single()
 
         if (approvalErr) {
-          console.error(`[sop-31] approval_queue insert failed for ${client.name}: ${approvalErr.message}`)
-          errors.push(`approval ${client.name}: ${approvalErr.message}`)
+          console.error(`[sop-31] approval_queue insert failed for ${client.business_name}: ${approvalErr.message}`)
+          errors.push(`approval ${client.business_name}: ${approvalErr.message}`)
         } else {
           approvalItemsCreated++
           approvalIds.push(approvalRow?.id ?? '')
-          console.log(`[sop-31] approval item created for ${client.name}: ${approvalRow?.id}`)
+          console.log(`[sop-31] approval item created for ${client.business_name}: ${approvalRow?.id}`)
         }
 
-        // ── 5c. Alert if upsell score meets threshold ─────────────────────────
         if (output.upsell_score >= UPSELL_THRESHOLD) {
-          upsellClients.push(client.name)
+          upsellClients.push(client.business_name)
 
           const { error: alertErr } = await supabase.from('ai_alerts').insert({
             severity:         'info',
             sop_id:           SOP_ID,
             category:         'Upsell Opportunity',
-            message:          `${client.name} upsell-ready: score ${output.upsell_score}/10 — ${output.upsell_rationale}`,
-            suggested_action: `Propose ${UPSELL_TIER} upgrade to ${client.contact_name ?? client.name}. Current tier: ${TIER_LABEL} (£1500/mo). Next tier: ${UPSELL_TIER} (£3000/mo, adds Remarketing).`,
-            client_name:      client.name,
+            message:          `${client.business_name} upsell-ready: score ${output.upsell_score}/10 — ${output.upsell_rationale}`,
+            suggested_action: `Propose ${UPSELL_TIER} upgrade to ${client.contact_name ?? client.business_name}. Current tier: ${TIER_LABEL} (£1500/mo). Next tier: ${UPSELL_TIER} (£3000/mo, adds Remarketing).`,
+            client_name:      client.business_name,
             resolved:         false,
           })
 
           if (alertErr) {
-            console.error(`[sop-31] alert insert failed for ${client.name}: ${alertErr.message}`)
-            errors.push(`alert ${client.name}: ${alertErr.message}`)
+            console.error(`[sop-31] alert insert failed for ${client.business_name}: ${alertErr.message}`)
+            errors.push(`alert ${client.business_name}: ${alertErr.message}`)
           } else {
             alertsCreated++
-            console.log(`[sop-31] upsell alert created for ${client.name} (score ${output.upsell_score})`)
+            console.log(`[sop-31] upsell alert created for ${client.business_name} (score ${output.upsell_score})`)
           }
         }
       } catch (clientErr) {
         const msg = clientErr instanceof Error ? clientErr.message : String(clientErr)
-        console.error(`[sop-31] error processing ${client.name}: ${msg}`)
-        errors.push(`${client.name}: ${msg}`)
+        console.error(`[sop-31] error processing ${client.business_name}: ${msg}`)
+        errors.push(`${client.business_name}: ${msg}`)
       }
     }
 

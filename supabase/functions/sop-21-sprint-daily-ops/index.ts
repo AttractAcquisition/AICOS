@@ -6,23 +6,62 @@ const SOP_NAME = 'SOP 21 — Proof Sprint Daily Ops'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Raw shape from proof_sprints
+interface RawSprintRow {
+  id:               string
+  client_name:      string
+  status:           string
+  sprint_number:    number | null
+  leads_generated:  number | null
+  actual_ad_spend:  number | null
+  client_ad_budget: number | null
+  total_impressions: number | null
+  link_clicks:      number | null
+  start_date:       string
+}
+
+// Normalised shape used by business logic
 interface SprintRow {
-  id: string
-  client_name: string
-  status: string
-  day_number: number
+  id:              string
+  client_name:     string
+  status:          string
+  day_number:      number
   leads_generated: number
-  leads_target: number
-  spend: number
-  spend_budget: number
-  cpl: number
-  cpl_target: number
-  roas: number
-  roas_target: number
-  meta_sync_status: string | null
+  leads_target:    number
+  spend:           number
+  spend_budget:    number
+  cpl:             number
+  cpl_target:      number
+  roas:            number
+  roas_target:     number
 }
 
 type HealthStatus = 'on_track' | 'at_risk' | 'off_track'
+
+// ─── Normalise ────────────────────────────────────────────────────────────────
+
+function normalise(raw: RawSprintRow): SprintRow {
+  const leadsGen = raw.leads_generated  ?? 0
+  const spend    = raw.actual_ad_spend  ?? 0
+  const dayMs    = Date.now() - new Date(raw.start_date).getTime()
+  const dayNum   = raw.sprint_number ?? Math.max(Math.floor(dayMs / 86_400_000), 1)
+  const cpl      = leadsGen > 0 ? spend / leadsGen : 0
+
+  return {
+    id:              raw.id,
+    client_name:     raw.client_name,
+    status:          raw.status,
+    day_number:      dayNum,
+    leads_generated: leadsGen,
+    leads_target:    0,
+    spend,
+    spend_budget:    raw.client_ad_budget ?? 0,
+    cpl,
+    cpl_target:      0,
+    roas:            0,
+    roas_target:     0,
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,10 +85,15 @@ function buildNotes(s: SprintRow, health: HealthStatus): string {
 
   return [
     `Day ${s.day_number}: ${s.leads_generated}/${s.leads_target} leads (${pacePct.toFixed(1)}% of target)`,
-    `CPL £${s.cpl.toFixed(2)} vs £${s.cpl_target} target` +
-      (cplDelta > 0 ? ` (+${cplDelta.toFixed(1)}% over)` : ` (${Math.abs(cplDelta).toFixed(1)}% under)`),
-    `ROAS ${s.roas.toFixed(2)}x vs ${s.roas_target}x target` +
-      (roasDelta >= 0 ? ` (+${roasDelta.toFixed(1)}%)` : ` (${roasDelta.toFixed(1)}%)`),
+    `CPL £${s.cpl.toFixed(2)}` +
+      (s.cpl_target > 0
+        ? ` vs £${s.cpl_target} target` +
+          (cplDelta > 0 ? ` (+${cplDelta.toFixed(1)}% over)` : ` (${Math.abs(cplDelta).toFixed(1)}% under)`)
+        : ''),
+    `ROAS ${s.roas.toFixed(2)}x` +
+      (s.roas_target > 0
+        ? ` vs ${s.roas_target}x target (${roasDelta >= 0 ? '+' : ''}${roasDelta.toFixed(1)}%)`
+        : ''),
     `Spend £${s.spend.toFixed(2)} / £${s.spend_budget} (${budgetPct.toFixed(1)}% used)`,
     `Health: ${health}`,
   ].join('. ')
@@ -72,13 +116,13 @@ Deno.serve(async (req) => {
 
     // ── 1. Fetch active sprints ───────────────────────────────────────────────
     const { data: initial, error: fetchErr } = await supabase
-      .from('sprints')
-      .select('*')
+      .from('proof_sprints')
+      .select('id, client_name, status, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
       .eq('status', 'active')
 
-    if (fetchErr) throw new Error(`fetch sprints: ${fetchErr.message}`)
+    if (fetchErr) throw new Error(`fetch proof_sprints: ${fetchErr.message}`)
 
-    const initialSprints = (initial ?? []) as SprintRow[]
+    const initialSprints = ((initial ?? []) as RawSprintRow[]).map(normalise)
     console.log(`[sop-21] ${initialSprints.length} active sprints`)
 
     if (initialSprints.length === 0) {
@@ -102,7 +146,6 @@ Deno.serve(async (req) => {
       { body: { date_preset: 'last_30d' } },
     )
     if (syncErr) {
-      // Non-fatal: proceed with the metrics already in the DB
       console.warn(`[sop-21] meta-ads-sync warning (continuing with cached data): ${syncErr.message}`)
     } else {
       console.log(`[sop-21] meta-ads-sync done — synced=${syncResult?.synced ?? 0}, skipped=${syncResult?.skipped ?? 0}`)
@@ -110,13 +153,13 @@ Deno.serve(async (req) => {
 
     // ── 3. Re-fetch sprints with freshly synced metrics ───────────────────────
     const { data: fresh, error: refreshErr } = await supabase
-      .from('sprints')
-      .select('*')
+      .from('proof_sprints')
+      .select('id, client_name, status, sprint_number, leads_generated, actual_ad_spend, client_ad_budget, total_impressions, link_clicks, start_date')
       .eq('status', 'active')
 
-    if (refreshErr) throw new Error(`re-fetch sprints: ${refreshErr.message}`)
+    if (refreshErr) throw new Error(`re-fetch proof_sprints: ${refreshErr.message}`)
 
-    const sprints = (fresh ?? []) as SprintRow[]
+    const sprints = ((fresh ?? []) as RawSprintRow[]).map(normalise)
     const now     = new Date().toISOString()
 
     let logsCreated   = 0
@@ -130,10 +173,10 @@ Deno.serve(async (req) => {
         const cplDelta = pct(sprint.cpl, sprint.cpl_target)
         const notes    = buildNotes(sprint, health)
 
-        console.log(`[sop-21] ${sprint.client_name} — ${health}, CPL delta ${cplDelta.toFixed(1)}%`)
+        console.log(`[sop-21] ${sprint.client_name} — ${health}, CPL £${sprint.cpl.toFixed(2)}`)
 
         // Write daily sprint log entry
-        const { error: logErr } = await supabase.from('sprint_logs').insert({
+        const { error: logErr } = await supabase.from('sprint_daily_log').insert({
           sprint_id:       sprint.id,
           client_name:     sprint.client_name,
           logged_at:       now,
@@ -150,12 +193,10 @@ Deno.serve(async (req) => {
         })
 
         if (logErr) {
-          console.error(`[sop-21] sprint_logs insert failed for ${sprint.id}: ${logErr.message}`)
+          console.error(`[sop-21] sprint_daily_log insert failed for ${sprint.id}: ${logErr.message}`)
           errors.push(`sprint_log ${sprint.id}: ${logErr.message}`)
         } else {
           logsCreated++
-          // Stamp last_log_at on the sprint
-          await supabase.from('sprints').update({ last_log_at: now }).eq('id', sprint.id)
         }
 
         // ── 5. Alert when CPL > 20% over target ──────────────────────────────
