@@ -10,7 +10,22 @@ const SOP_NAME  = 'SOP 26 — Sprint Closeout'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Raw shape returned from proof_sprints
 interface SprintRow {
+  id:               string
+  client_name:      string
+  status:           string
+  sprint_number:    number | null
+  leads_generated:  number | null
+  actual_ad_spend:  number | null
+  client_ad_budget: number | null
+  total_impressions: number | null
+  link_clicks:      number | null
+  start_date:       string
+}
+
+// Normalised shape used throughout the rest of the function
+interface NormalisedSprint {
   id:               string
   client_name:      string
   status:           string
@@ -25,9 +40,8 @@ interface SprintRow {
   roas_target:      number
   impressions:      number
   clicks:           number
-  start_date:       string | null
-  end_date:         string | null
-  meta_campaign_id: string | null
+  start_date:       string
+  end_date:         string
 }
 
 interface AdSetLogRow {
@@ -40,19 +54,54 @@ interface AdSetLogRow {
 }
 
 interface CloseoutAnalysis {
-  totalLeads:       number
-  finalCPL:         number
-  finalROAS:        number
-  cplVsTarget:      string
-  roasVsTarget:     string
+  totalLeads:        number
+  finalCPL:          number
+  finalROAS:         number
+  cplVsTarget:       string
+  roasVsTarget:      string
   budgetUtilisation: string
-  leadPaceVsTarget: string
-  ctr:              string
+  leadPaceVsTarget:  string
+  ctr:               string
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function analyse(s: SprintRow): CloseoutAnalysis {
+// Map a raw proof_sprints row to the normalised shape the rest of the function expects.
+// Derives day_number from start_date, computes CPL from spend/leads.
+function normalise(raw: SprintRow): NormalisedSprint {
+  const leadsGen   = raw.leads_generated   ?? 0
+  const spend      = raw.actual_ad_spend   ?? 0
+  const budget     = raw.client_ad_budget  ?? 0
+  const impressions = raw.total_impressions ?? 0
+  const clicks     = raw.link_clicks       ?? 0
+
+  const dayMs  = Date.now() - new Date(raw.start_date).getTime()
+  const dayNum = raw.sprint_number ?? Math.max(Math.floor(dayMs / 86_400_000), 1)
+  const cpl    = leadsGen > 0 ? spend / leadsGen : 0
+  const endDate = new Date(new Date(raw.start_date).getTime() + 14 * 86_400_000)
+    .toISOString().slice(0, 10)
+
+  return {
+    id:            raw.id,
+    client_name:   raw.client_name,
+    status:        raw.status,
+    day_number:    dayNum,
+    leads_generated: leadsGen,
+    leads_target:  0,   // not stored on proof_sprints
+    spend,
+    spend_budget:  budget,
+    cpl,
+    cpl_target:    0,   // not stored on proof_sprints
+    roas:          0,   // not stored on proof_sprints
+    roas_target:   0,   // not stored on proof_sprints
+    impressions,
+    clicks,
+    start_date:    raw.start_date,
+    end_date:      endDate,
+  }
+}
+
+function analyse(s: NormalisedSprint): CloseoutAnalysis {
   const cplDelta  = s.cpl_target > 0 ? ((s.cpl / s.cpl_target - 1) * 100) : 0
   const roasDelta = s.roas_target > 0 ? ((s.roas / s.roas_target - 1) * 100) : 0
   const budgetPct = s.spend_budget > 0 ? (s.spend / s.spend_budget) * 100 : 0
@@ -82,9 +131,9 @@ interface CloseoutReport {
 }
 
 async function generateCloseoutReport(
-  sprint:     SprintRow,
-  adSetLogs:  AdSetLogRow[],
-  metrics:    CloseoutAnalysis,
+  sprint:    NormalisedSprint,
+  adSetLogs: AdSetLogRow[],
+  metrics:   CloseoutAnalysis,
 ): Promise<CloseoutReport> {
   const adSetSection = adSetLogs.length > 0
     ? adSetLogs.map(a =>
@@ -96,14 +145,13 @@ async function generateCloseoutReport(
 
   const context = `SPRINT CLOSEOUT DATA
 Client: ${sprint.client_name}
-Sprint dates: ${sprint.start_date ?? 'unknown'} → ${sprint.end_date ?? 'today'}
+Sprint dates: ${sprint.start_date} → ${sprint.end_date}
 Sprint day: ${sprint.day_number} of 14
 
 FINAL METRICS:
-  Leads generated: ${metrics.totalLeads} / ${sprint.leads_target} target (${metrics.leadPaceVsTarget} of target)
-  CPL: £${metrics.finalCPL.toFixed(2)} vs £${sprint.cpl_target} target (${metrics.cplVsTarget} vs target)
-  ROAS: ${metrics.finalROAS.toFixed(2)}x vs ${sprint.roas_target}x target (${metrics.roasVsTarget} vs target)
-  Spend: £${sprint.spend.toFixed(2)} / £${sprint.spend_budget} budget (${metrics.budgetUtilisation} utilised)
+  Leads generated: ${metrics.totalLeads}
+  CPL: £${metrics.finalCPL.toFixed(2)}
+  Spend: £${sprint.spend.toFixed(2)}${sprint.spend_budget > 0 ? ` / £${sprint.spend_budget} budget (${metrics.budgetUtilisation} utilised)` : ''}
   Impressions: ${sprint.impressions.toLocaleString()}
   Clicks: ${sprint.clicks.toLocaleString()}
   CTR: ${metrics.ctr}
@@ -122,9 +170,9 @@ ${adSetSection}`
       '  summary        — string: 2-3 sentence executive summary of the sprint',
       '  keyLearnings   — string[]: 3-5 bullet points of what we learned (campaign, audience, offer insights)',
       '  recommendation — one of: "continue_as_proof_brand" | "repeat_sprint" | "pause"',
-      '                   continue_as_proof_brand: CPL ≤ target, leads ≥ 80% of target, strong ROAS — client ready to scale',
-      '                   repeat_sprint: CPL within 20% of target or leads 60-79% of target — good signal, needs another sprint',
-      '                   pause: CPL > 20% over target AND leads < 60% of target — fundamentals need reviewing',
+      '                   continue_as_proof_brand: strong lead volume, good CPL, client ready to scale',
+      '                   repeat_sprint: reasonable CPL, decent lead volume but needs refinement',
+      '                   pause: very high CPL or very low lead volume — fundamentals need reviewing',
       '  rationale      — string: 2-3 sentences explaining the recommendation decision',
       '  nextSteps      — string[]: 3-5 specific, actionable next steps for the account manager',
       '',
@@ -162,23 +210,24 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // ── 1. Fetch sprints ready for closeout ──────────────────────────────────
+    // ── 1. Fetch sprints ready for closeout (start_date ≤ 14 days ago) ────────
+    const threshold = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+      .toISOString().slice(0, 10)
+
     const { data: rawSprints, error: sprintsErr } = await supabase
-      .from('sprints')
+      .from('proof_sprints')
       .select([
-        'id', 'client_name', 'status', 'day_number',
-        'leads_generated', 'leads_target',
-        'spend', 'spend_budget', 'cpl', 'cpl_target',
-        'roas', 'roas_target', 'impressions', 'clicks',
-        'start_date', 'end_date', 'meta_campaign_id',
+        'id', 'client_name', 'status', 'sprint_number',
+        'leads_generated', 'actual_ad_spend', 'client_ad_budget',
+        'total_impressions', 'link_clicks', 'start_date',
       ].join(', '))
       .eq('status', 'active')
-      .gte('day_number', 14)
+      .lte('start_date', threshold)
 
-    if (sprintsErr) throw new Error(`fetch sprints: ${sprintsErr.message}`)
+    if (sprintsErr) throw new Error(`fetch proof_sprints: ${sprintsErr.message}`)
 
-    const sprints = (rawSprints ?? []) as SprintRow[]
-    console.log(`[sop-26] ${sprints.length} sprints eligible for closeout`)
+    const sprints = ((rawSprints ?? []) as SprintRow[]).map(normalise)
+    console.log(`[sop-26] ${sprints.length} sprints eligible for closeout (started ≤ ${threshold})`)
 
     if (sprints.length === 0) {
       await supabase.from('ai_task_log').insert({
@@ -187,7 +236,7 @@ Deno.serve(async (req) => {
         tool_called:    SONNET,
         status:         'success',
         duration_ms:    Date.now() - startedAt,
-        input_summary:  '0 sprints at day 14+',
+        input_summary:  `0 sprints started on or before ${threshold}`,
         output_summary: 'No sprints ready for closeout',
       })
       return new Response(
@@ -217,9 +266,9 @@ Deno.serve(async (req) => {
     }
 
     // ── 3. Process each sprint ───────────────────────────────────────────────
-    let closedOut         = 0
-    let approvalCreated   = 0
-    let alertsCreated     = 0
+    let closedOut        = 0
+    let approvalCreated  = 0
+    let alertsCreated    = 0
     const approvalIds: string[] = []
     const errors: string[]      = []
 
@@ -236,12 +285,12 @@ Deno.serve(async (req) => {
 
         // ── 3b. Mark sprint as complete ──────────────────────────────────────
         const { error: updateErr } = await supabase
-          .from('sprints')
+          .from('proof_sprints')
           .update({ status: 'complete' })
           .eq('id', sprint.id)
 
         if (updateErr) {
-          console.error(`[sop-26] sprint update failed for ${sprint.id}: ${updateErr.message}`)
+          console.error(`[sop-26] proof_sprints update failed for ${sprint.id}: ${updateErr.message}`)
           errors.push(`sprint update ${sprint.id}: ${updateErr.message}`)
           continue
         }
@@ -249,9 +298,8 @@ Deno.serve(async (req) => {
         closedOut++
 
         // ── 3c. Create approval_queue item ───────────────────────────────────
-        const today     = new Date().toISOString().slice(0, 10)
-        const startDate = sprint.start_date ?? 'unknown'
-        const reportTitle = `Sprint Closeout — ${sprint.client_name} — ${startDate} → ${today}`
+        const today       = new Date().toISOString().slice(0, 10)
+        const reportTitle = `Sprint Closeout — ${sprint.client_name} — ${sprint.start_date} → ${today}`
 
         const recommendationLabel: Record<string, string> = {
           continue_as_proof_brand: 'Continue as Proof Brand',
@@ -289,12 +337,7 @@ Deno.serve(async (req) => {
                 sprint_id:        sprint.id,
                 sprint_day:       sprint.day_number,
                 total_leads:      metrics.totalLeads,
-                leads_target:     sprint.leads_target,
                 final_cpl:        metrics.finalCPL,
-                cpl_target:       sprint.cpl_target,
-                cpl_vs_target:    metrics.cplVsTarget,
-                final_roas:       metrics.finalROAS,
-                roas_target:      sprint.roas_target,
                 budget_used_pct:  metrics.budgetUtilisation,
                 recommendation:   report.recommendation,
                 key_learnings:    report.keyLearnings,
@@ -316,8 +359,7 @@ Deno.serve(async (req) => {
 
         // ── 3d. Create ai_alert for sprint completion ────────────────────────
         const alertMsg = [
-          `Sprint complete — ${sprint.client_name}: ${metrics.totalLeads} leads at CPL £${metrics.finalCPL.toFixed(2)}`,
-          `(${metrics.cplVsTarget} vs £${sprint.cpl_target} target, ROAS ${metrics.finalROAS.toFixed(2)}x).`,
+          `Sprint complete — ${sprint.client_name}: ${metrics.totalLeads} leads at CPL £${metrics.finalCPL.toFixed(2)}.`,
           `Recommendation: ${recommendationLabel[report.recommendation] ?? report.recommendation}.`,
         ].join(' ')
 
@@ -359,7 +401,7 @@ Deno.serve(async (req) => {
       tool_called:    SONNET,
       status:         errors.length > 0 && closedOut === 0 ? 'failure' : 'success',
       duration_ms:    Date.now() - startedAt,
-      input_summary:  `${sprints.length} sprints at day 14+`,
+      input_summary:  `${sprints.length} sprints started ≤ ${threshold}`,
       output_summary: outputSummary,
     })
 
